@@ -13,6 +13,7 @@ const includeFiles = [
   'next.config.js',
   'tailwind.config.js',
   'postcss.config.js',
+  'server.js',
   '.next',
 ];
 
