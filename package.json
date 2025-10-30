@@ -14,7 +14,8 @@
     "build:prod": "yarn build && prisma generate && pm2 start npm --name wendi -- run start -- -p 6060",
     "custom:dev": "node src/server.js",
     "custom:prod": "next build && NODE_ENV=production node src/server.js",
-    "plesk:setup": "prisma generate && npm run build"
+    "plesk:setup": "prisma generate && npm run build",
+    "aws:setup": "npx prisma generate && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

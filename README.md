@@ -36,3 +36,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Deploy on AWS EC2
+
+This project is configured for deployment on AWS EC2.
+
+- **Quick Start**: See [AWS_QUICK_START.md](AWS_QUICK_START.md)
+- **Full Guide**: See [AWS_EC2_DEPLOYMENT.md](AWS_EC2_DEPLOYMENT.md)
+- **Checklist**: See [AWS_DEPLOYMENT_CHECKLIST.md](AWS_DEPLOYMENT_CHECKLIST.md)
+- **Overview**: See [README_DEPLOYMENT.md](README_DEPLOYMENT.md)
+
+Before deploying, check [PRE_UPLOAD_CHECKLIST.md](PRE_UPLOAD_CHECKLIST.md) to ensure everything is ready.
