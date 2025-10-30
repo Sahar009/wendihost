@@ -10,7 +10,6 @@ let prisma: PrismaClient;
 // Configure Prisma for serverless environments (AWS Amplify)
 const prismaOptions = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  errorFormat: 'pretty',
 };
 
 if (process.env.NODE_ENV === 'production') {
