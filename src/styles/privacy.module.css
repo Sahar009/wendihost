@@ -1,0 +1,27 @@
+.privacy {
+    background-color: white;
+    margin: 5rem;
+    padding: 5rem;
+}
+
+.privacy h2 {
+    font-size: larger;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.privacy p {
+    font-size: medium;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    color: rgb(78, 77, 77);
+}
+
+@media screen and (max-width: 720px) {
+    .privacy {
+        margin: 1rem;
+        padding: 1rem;
+    }
+    
+}

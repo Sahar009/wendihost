@@ -1,0 +1,483 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MANAGER
+  AGENT
+}
+
+enum Status {
+  PENDING
+  FAILED
+  SUCCESS
+}
+
+enum ConversationStatus {
+  open
+  closed
+  snoozed
+}
+
+enum MessageType {
+  text
+  template
+  action
+  broadcast
+}
+
+enum FileType {
+  none
+  image
+  video
+  audio
+}
+
+enum MessageStatus {
+  sent
+  delivered
+  read
+  failed
+}
+
+enum AdType {
+  FACEBOOK
+  WHATSAPP
+}
+
+enum AdStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  DISAPPROVED
+  ARCHIVED
+  FAILED
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  firstName       String
+  lastName        String
+  password        String
+  reseller        Boolean          @default(false)
+  resellerId      Int              @default(0) @map(name: "reseller_id")
+  emailVerified   Boolean          @default(false) @map(name: "email_verified")
+  emailToken      String?          @map(name: "email_token")
+  resetToken      String?          @map(name: "reset_token")
+  tokenExpireAt   DateTime         @map(name: "token_expire_at")
+  workspaces      Workspace[]
+  messages        Message[]
+  resellers       Reseller[]
+  broadcasts      Broadcast[]
+  tags            Tag[]
+  campaigns       Campaign[]       @relation("UserCampaigns")
+  metaAds         MetaAd[]
+  whatsAppWidgets WhatsAppWidget[]
+  createdAt       DateTime         @default(now()) @map(name: "created_at")
+  updatedAt       DateTime         @updatedAt @map(name: "updated_at")
+}
+
+model Workspace {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  description        String
+  workspaceId        String
+  ownerId            Int
+  fbUserId           Int?                @map(name: "fb_user_id")
+  phone              String?
+  accessToken        String?
+  businessId         String?
+  whatsappId         String?
+  phoneId            String?
+  apiKey             String?
+  whatsAppWidgets    WhatsAppWidget[]
+  sync               Boolean             @default(false)
+  lastSyncAt         DateTime            @default(now()) @updatedAt @map(name: "last_sync_at")
+  owner              User                @relation(fields: [ownerId], references: [id])
+  members            Member[]
+  templates          Template[]
+  snippets           Snippet[]
+  contacts           Contact[]
+  conversations      Conversation[]
+  messages           Message[]
+  chatbots           Chatbot[]
+  whatsappLink       WhatsappLink[]
+  broadcasts         Broadcast[]
+  tags               Tag[]
+  campaigns          Campaign[]          @relation("WorkspaceCampaigns")
+  uploads            Upload[]
+  metaAds            MetaAd[]
+  assistants         Assistant[]
+  whatsappLinkClicks WhatsappLinkClick[]
+  automationSettings AutomationSettings?
+  responseMaterials  ResponseMaterial[]
+  createdAt          DateTime            @default(now()) @map(name: "created_at")
+  updatedAt          DateTime            @updatedAt @map(name: "updated_at")
+}
+
+model Assistant {
+  id              Int                       @id @default(autoincrement())
+  name            String
+  description     String?
+  status          String                    @default("active")
+  knowledge       Json?                     @db.Json
+  workspaceId     Int
+  workspace       Workspace                 @relation(fields: [workspaceId], references: [id])
+  knowledgeChunks AssistantKnowledgeChunk[]
+  createdAt       DateTime                  @default(now()) @map(name: "created_at")
+  updatedAt       DateTime                  @updatedAt @map(name: "updated_at")
+}
+
+model AssistantKnowledgeChunk {
+  id          Int       @id @default(autoincrement())
+  assistantId Int
+  content     String
+  embedding   Json // Store as JSON array (OpenAI returns float[])
+  createdAt   DateTime  @default(now())
+  assistant   Assistant @relation(fields: [assistantId], references: [id])
+}
+
+model Member {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String
+  password     String
+  workspaceId  Int
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id])
+  messages     Message[]
+  conversation Conversation[]
+  broadcasts   Broadcast[]
+  tags         Tag[]
+  role         Role           @default(AGENT)
+  createdAt    DateTime       @default(now()) @map(name: "created_at")
+  updatedAt    DateTime       @updatedAt @map(name: "updated_at")
+}
+
+model Template {
+  id          Int       @id @default(autoincrement())
+  name        String
+  components  String
+  status      String
+  language    String
+  templateId  String
+  category    String
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now()) @map(name: "created_at")
+  updatedAt   DateTime  @updatedAt @map(name: "updated_at")
+}
+
+model Snippet {
+  id          Int       @id @default(autoincrement())
+  name        String
+  title       String
+  body        String
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now()) @map(name: "created_at")
+  updatedAt   DateTime  @updatedAt @map(name: "updated_at")
+}
+
+model Contact {
+  id             Int           @id @default(autoincrement())
+  email          String?
+  firstName      String?
+  lastName       String?
+  phone          String
+  tag            String        @default("new")
+  additionalInfo String        @default("[]")
+  workspaceId    Int
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id])
+  conversationId Int?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  createdAt      DateTime      @default(now()) @map(name: "created_at")
+  updatedAt      DateTime      @updatedAt @map(name: "updated_at")
+}
+
+enum MessageSource {
+  CAMPAIGN
+  WIDGET
+  META_ADS
+  DIRECT
+}
+
+model Conversation {
+  id             Int                @id @default(autoincrement())
+  assigned       Boolean            @default(false)
+  phone          String
+  read           Boolean            @default(true)
+  source         MessageSource      @default(DIRECT)
+  campaignId     Int?               @map(name: "campaign_id")
+  campaign       Campaign?          @relation("CampaignConversations", fields: [campaignId], references: [id])
+  widgetId       String?            @map(name: "widget_id")
+  widget         WhatsAppWidget?    @relation("WidgetConversations", fields: [widgetId], references: [id])
+  metaAdId       String?            @map(name: "meta_ad_id")
+  metaAd         MetaAd?            @relation("MetaAdConversations", fields: [metaAdId], references: [id])
+  chatbotId      Int?
+  Chatbot        Chatbot?           @relation(fields: [chatbotId], references: [id])
+  chatbotTimeout DateTime?
+  memberId       Int?
+  Member         Member?            @relation(fields: [memberId], references: [id])
+  status         ConversationStatus @default(open)
+  messages       Message[]
+  workspaceId    Int
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id])
+  contact        Contact[]
+  currentNode    String?
+  createdAt      DateTime           @default(now()) @map(name: "created_at")
+  updatedAt      DateTime           @updatedAt @map(name: "updated_at")
+}
+
+model Message {
+  id             Int           @id @default(autoincrement())
+  phone          String
+  type           MessageType   @default(text)
+  fromCustomer   Boolean       @default(false)
+  isBot          Boolean       @default(false)
+  fileType       FileType      @default(none)
+  link           String?
+  message        String
+  messageId      String?
+  templateId     String?
+  senderUserId   Int?
+  senderUser     User?         @relation(fields: [senderUserId], references: [id])
+  senderMemberId Int?
+  sendMember     Member?       @relation(fields: [senderMemberId], references: [id])
+  status         MessageStatus @default(sent)
+  conversationId Int
+  conversation   Conversation  @relation(fields: [conversationId], references: [id])
+  workspaceId    Int
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id])
+  createdAt      DateTime      @default(now()) @map(name: "created_at")
+}
+
+model Tag {
+  id             Int       @id @default(autoincrement())
+  name           String
+  senderUserId   Int?
+  senderUser     User?     @relation(fields: [senderUserId], references: [id])
+  senderMemberId Int?
+  sendMember     Member?   @relation(fields: [senderMemberId], references: [id])
+  workspaceId    Int
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt      DateTime  @default(now()) @map(name: "created_at")
+}
+
+model Broadcast {
+  id             Int            @id @default(autoincrement())
+  message        String
+  templateId     String
+  templateName   String
+  senderUserId   Int?
+  senderUser     User?          @relation(fields: [senderUserId], references: [id])
+  senderMemberId Int?
+  sendMember     Member?        @relation(fields: [senderMemberId], references: [id])
+  workspaceId    Int
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id])
+  size           Int
+  completed      Int
+  broadcastJobs  BroadcastJob[]
+  createdAt      DateTime       @default(now()) @map(name: "created_at")
+}
+
+model BroadcastJob {
+  id          Int       @id @default(autoincrement())
+  phone       String
+  status      Status    @default(PENDING)
+  broadcastId Int
+  broadcast   Broadcast @relation(fields: [broadcastId], references: [id])
+  createdAt   DateTime  @default(now()) @map(name: "created_at")
+}
+
+model Chatbot {
+  id            Int            @id @default(autoincrement())
+  name          String
+  trigger       String         @default("/")
+  default       Boolean        @default(false)
+  nodes         String         @default("[]")
+  edges         String         @default("[]")
+  bot           String?
+  publish       Boolean        @default(false)
+  workspaceId   Int
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id])
+  conversations Conversation[]
+  createdAt     DateTime       @default(now()) @map(name: "created_at")
+  updatedAt     DateTime       @updatedAt @map(name: "updated_at")
+}
+
+model Campaign {
+  id               Int            @id @default(autoincrement())
+  name             String
+  category         String
+  startDate        DateTime
+  endDate          DateTime
+  trigger          String?
+  messageType      String?
+  image            String?
+  responseTemplate String?
+  workspaceId      Int
+  workspace        Workspace      @relation("WorkspaceCampaigns", fields: [workspaceId], references: [id])
+  userId           Int
+  user             User           @relation("UserCampaigns", fields: [userId], references: [id])
+  sequences        Sequence[]
+  conversations    Conversation[] @relation("CampaignConversations")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model Sequence {
+  id         Int       @id @default(autoincrement())
+  date       DateTime
+  time       String?
+  template   String    @db.Text
+  status     String    @default("pending") @db.VarChar(20)
+  sentAt     DateTime? @default(dbgenerated("NULL"))
+  campaignId Int
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamp(6)
+}
+
+model WhatsappLink {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique
+  message            String
+  phoneNumber        String
+  visitors           Int                 @default(0)
+  workspaceId        Int
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id])
+  whatsappLinkClicks WhatsappLinkClick[]
+  createdAt          DateTime            @default(now()) @map(name: "created_at")
+  updatedAt          DateTime            @updatedAt @map(name: "updated_at")
+}
+
+model WhatsappLinkClick {
+  id             Int          @id @default(autoincrement())
+  whatsappLink   WhatsappLink @relation(fields: [whatsappLinkId], references: [id])
+  whatsappLinkId Int
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id])
+  workspaceId    Int
+  createdAt      DateTime     @default(now())
+}
+
+model Reseller {
+  id           Int      @id @default(autoincrement())
+  domain       String   @unique
+  subdomain    String   @unique
+  userId       Int      @unique
+  //user            User      @relation(fields: [userId], references: [id])
+  logo         String?
+  logoText     String?
+  resellerId   Int?
+  resellerUser User?    @relation(fields: [resellerId], references: [id])
+  createdAt    DateTime @default(now()) @map(name: "created_at")
+  updatedAt    DateTime @updatedAt @map(name: "updated_at")
+}
+
+
+model WhatsAppWidget {
+  id              String        @id @default(uuid())
+  name            String
+  phoneNumber     String
+  message         String
+  position        String        @default("right")
+  bottom          Int           @default(20)
+  backgroundColor String        @default("#25D366")
+  textColor       String        @default("#FFFFFF")
+  icon            String        @default("whatsapp")
+  widgetCode      String        @unique
+  userId          Int
+  workspaceId     Int
+  isActive        Boolean       @default(true)
+  conversations   Conversation[] @relation("WidgetConversations")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model Upload {
+  id          Int       @id @default(autoincrement())
+  filename    String
+  url         String
+  type        String
+  size        Int
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now()) @map(name: "created_at")
+  updatedAt   DateTime  @updatedAt @map(name: "updated_at")
+}
+
+model MetaAd {
+  id             String         @id @default(cuid())
+  adName         String
+  adType         AdType         @default(FACEBOOK)
+  color          String
+  objective      String
+  targetAudience String
+  budget         Float
+  startDate      DateTime
+  endDate        DateTime
+  mediaUrl       String?
+  adText         String
+  cta            String
+  phoneNumber    String? // Required for WhatsApp ads
+  status         AdStatus       @default(DRAFT)
+  facebookAdId   String? // Facebook ad ID
+  campaignId     String? // Facebook campaign ID
+  adSetId        String? // Facebook ad set ID
+  creativeId     String? // Facebook creative ID
+  userId         Int
+  user           User           @relation(fields: [userId], references: [id])
+  workspaceId    Int
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id])
+  conversations  Conversation[] @relation("MetaAdConversations")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model AutomationSettings {
+  id            Int      @id @default(autoincrement())
+  workspaceId  Int      @unique
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  
+  // Working Hours
+  holidayMode  Boolean  @default(false)
+  workingHours Json     @default("[]") // Store as JSON array
+  
+  // Automation Rules
+  automationRules Json  @default("[]") // Store as JSON array
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ResponseMaterial {
+  id          Int      @id @default(autoincrement())
+  name        String
+  content     String   @db.Text
+  type        String   // welcome, out-of-hours, no-agent, fallback, follow-up, out-of-office
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([workspaceId, type])
+}
