@@ -7,7 +7,7 @@
     "dev-https": "prisma generate && HTTPS=true next dev",
     "dev:skip-prisma": "next dev",
     "build": "next build",
-    "start": "node server.js",
+    "start": "next start",
     "start:next": "next start",
     "lint": "next lint",
     "build-netlify": "prisma generate && next build",
@@ -15,7 +15,8 @@
     "custom:dev": "node src/server.js",
     "custom:prod": "next build && NODE_ENV=production node src/server.js",
     "plesk:setup": "prisma generate && npm run build",
-    "aws:setup": "npx prisma generate && npm run build"
+    "aws:setup": "npx prisma generate && npm run build",
+    "amplify:setup": "npx prisma generate && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

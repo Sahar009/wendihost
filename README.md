@@ -37,13 +37,20 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 
-## Deploy on AWS EC2
+## Deploy on AWS Amplify
 
-This project is configured for deployment on AWS EC2.
+This project is configured for deployment on AWS Amplify.
+
+- **Quick Guide**: See [AWS_AMPLIFY_DEPLOYMENT.md](AWS_AMPLIFY_DEPLOYMENT.md)
+- **Setup**: Follow the Amplify Console wizard
+- **Build**: Automatic from Git repository
+
+## Deploy on AWS EC2 (Alternative)
+
+For server-based deployment on AWS EC2:
 
 - **Quick Start**: See [AWS_QUICK_START.md](AWS_QUICK_START.md)
 - **Full Guide**: See [AWS_EC2_DEPLOYMENT.md](AWS_EC2_DEPLOYMENT.md)
 - **Checklist**: See [AWS_DEPLOYMENT_CHECKLIST.md](AWS_DEPLOYMENT_CHECKLIST.md)
-- **Overview**: See [README_DEPLOYMENT.md](README_DEPLOYMENT.md)
 
 Before deploying, check [PRE_UPLOAD_CHECKLIST.md](PRE_UPLOAD_CHECKLIST.md) to ensure everything is ready.
