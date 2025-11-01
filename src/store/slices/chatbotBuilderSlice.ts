@@ -3,7 +3,6 @@ import { optionNodeProp } from '@/components/chatbot/OptionMessageNode';
 import { CUSTOM_NODE } from '@/libs/enums';
 import { IReduxState } from '@/libs/interfaces';
 import { generateRandomId } from '@/libs/utils';
-import { FileType } from '@prisma/client';
 import { createSlice } from '@reduxjs/toolkit';
 import { HYDRATE } from 'next-redux-wrapper';
 import { Edge, Node } from 'reactflow';

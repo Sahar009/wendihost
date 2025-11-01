@@ -14,6 +14,8 @@ const initialState : IState = {
     workspaceId: '',
     ownerId: 0,
     fbUserId: null,
+    facebookAppId: null,
+    facebookConfigId: null,
     phone: null,
     accessToken: null,
     businessId: null,

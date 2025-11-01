@@ -1,5 +1,4 @@
 import { PROJECT_NAME } from "@/libs/constants";
-import { Reseller } from "@prisma/client";
 import Head from "next/head";
 import Link from "next/link";
 import React, { ReactNode } from "react";
@@ -11,7 +10,7 @@ interface IProps {
 
 
 const AuthLayout = (props: IProps) => {
-    const reseller = props.reseller ? JSON.parse(props.reseller) as Reseller : null;
+    const reseller = props.reseller ? JSON.parse(props.reseller) : null;
     
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

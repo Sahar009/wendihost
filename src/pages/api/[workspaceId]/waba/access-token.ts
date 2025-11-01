@@ -51,6 +51,48 @@ export default withIronSessionApiRoute(
 
       const displayPhoneNumber = phoneInfos?.filter((phoneInfo: any) => phoneInfo.id == phoneNumberId)[0].display_phone_number
 
+      const existingWorkspace = await prisma.workspace.findFirst({
+        where: {
+          phone: displayPhoneNumber,
+          NOT: {
+            id: Number(workspaceId)
+          }
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+
+      if (existingWorkspace) {
+        return new ServerError(
+          res,
+          400,
+          `This phone number is already connected to workspace "${existingWorkspace.name}". Please disconnect it there first.`
+        )
+      }
+
+      const existingPhoneId = await prisma.workspace.findFirst({
+        where: {
+          phoneId: phoneNumberId,
+          NOT: {
+            id: Number(workspaceId)
+          }
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+
+      if (existingPhoneId) {
+        return new ServerError(
+          res,
+          400,
+          `This WhatsApp phone ID is already in use by workspace "${existingPhoneId.name}".`
+        )
+      }
+
       await prisma.workspace.update({
         where: {
           id: Number(workspaceId) 

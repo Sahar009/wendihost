@@ -5,12 +5,13 @@ import ChatBotMsg, { IMsgValue } from "./ChatBotMsg";
 import NodeWrapper from "./NodeWrapper";
 import { useDispatch } from "react-redux";
 import { updateMessage } from "@/store/slices/chatbotBuilderSlice";
-import { FileType } from "@prisma/client";
 import LoadingButtonSM from "../utils/LoadingButtonSM";
+
+type FileTypeValue = IMsgValue['fileType'];
 
 interface ChatBotMsgNodeProps extends NodeProps {
   data: {
-    fileType?: FileType;
+    fileType?: FileTypeValue;
     text?: string;
     link?: string | null;
     location?: {
@@ -99,8 +100,8 @@ const ChatBotMsgNode: React.FC<ChatBotMsgNodeProps> = (props) => {
     setExtraBlocks(prev => {
       const newBlocks = [
         ...prev,
-        { 
-          fileType: "image" as FileType, // Default to image for upload blocks
+        {
+          fileType: "image" as FileTypeValue, // Default to image for upload blocks
           text: "", // No text for upload blocks
           link: null,
           location: null,

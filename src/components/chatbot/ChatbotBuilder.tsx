@@ -19,7 +19,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getEdges, getNodes, saveEdges, saveNodes } from '@/store/slices/chatbotBuilderSlice';
 import Toolbar from './ToolBar';
 import { CUSTOM_NODE } from '@/libs/enums';
-import { Chatbot } from '@prisma/client';
 import ChatWithAgentNode from './ChatWithAgentNode';
 import ButtonMessageNode from './ButtonMessageNode';
 import ButtonNode from './ButtonNode';
@@ -38,8 +37,17 @@ const nodeTypes = {
     [CUSTOM_NODE.CHAT_BOT_MSG_NODE]: ChatBotMsgNode
 };
 
+type ChatbotData = {
+    id?: number;
+    name?: string | null;
+    trigger?: string | null;
+    publish?: boolean | null;
+    nodes?: string | null;
+    edges?: string | null;
+};
+
 interface IProps {
-    chatbot: Chatbot | null;
+    chatbot: ChatbotData | null;
     onRefresh?: () => void;
 }
 

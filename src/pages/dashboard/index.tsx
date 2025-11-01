@@ -4,7 +4,7 @@ import LoadingButton from '@/components/utils/LoadingButton'
 import { FACEBOOK_CONFIG_ID } from '@/libs/constants'
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session'
 import { withIronSessionSsr } from 'iron-session/next'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Team from '@/components/widgets/team'
 import axios, { AxiosResponse } from 'axios'
 import { toast } from 'react-toastify'
@@ -97,6 +97,7 @@ export default function Dashboard(props: IProps) {
     const workspace = workspaceFromStore || user?.workspaces?.[0] || null
 
     const workspaceId = workspace?.id ?? 0
+    const workspaceName = workspace?.name ?? ''
 
     const fbLoginCallback = (response: any) => {
         console.log('Facebook login response:', response);
@@ -132,8 +133,15 @@ export default function Dashboard(props: IProps) {
             return;
         }
         
+        const configId = workspace?.facebookConfigId ?? FACEBOOK_CONFIG_ID;
+
+        if (!configId) {
+            toast.error('No Facebook configuration found for this workspace.');
+            return;
+        }
+
         window?.FB.login(fbLoginCallback, {
-            config_id: FACEBOOK_CONFIG_ID, // configuration ID goes here
+            config_id: configId, // configuration ID goes here
             response_type: 'code', // must be set to 'code' for System User access token
             override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default types
             extras: {
@@ -144,13 +152,21 @@ export default function Dashboard(props: IProps) {
         });
     }
 
-    const fetchDashboardData = async () => {
+    const lastFetchedWorkspaceId = useRef<number | null>(null)
+
+    const fetchDashboardData = useCallback(async (force = false) => {
         const timestamp = new Date().toISOString();
         console.log(`[${timestamp}] fetchDashboardData called with workspaceId:`, workspaceId);
-        console.log(`[${timestamp}] Current workspace:`, workspace);
+        console.log(`[${timestamp}] Current workspace name:`, workspaceName);
         console.log(`[${timestamp}] User workspaces:`, user.workspaces);
         
         if (workspaceId && workspaceId > 0) {
+            if (!force && lastFetchedWorkspaceId.current === workspaceId) {
+                console.log(`[${timestamp}] Skipping fetch - already fetched for workspaceId:`, workspaceId);
+                return;
+            }
+
+            lastFetchedWorkspaceId.current = workspaceId;
             setIsLoading(true);
             try {
                 console.log(`[${timestamp}] Fetching metrics for workspaceId:`, workspaceId);
@@ -178,18 +194,19 @@ export default function Dashboard(props: IProps) {
         } else {
             console.log(`[${timestamp}] Skipping metrics fetch - invalid workspaceId:`, workspaceId);
         }
-    };
+    // depend on workspaceId/name so callback updates when workspace changes
+    }, [workspaceId, workspaceName]);
 
 
     useEffect(() => {
-        console.log('useEffect triggered - workspaceId:', workspaceId, 'workspace.name:', workspace?.name);
-        if (workspaceId && workspaceId > 0 && workspace?.name) {
+        console.log('useEffect triggered - workspaceId:', workspaceId, 'workspace.name:', workspaceName);
+        if (workspaceId && workspaceId > 0 && workspaceName) {
             console.log('Conditions met, fetching dashboard data...');
             fetchDashboardData();
         } else {
             console.log('Conditions not met for fetching dashboard data');
         }
-    }, [workspaceId, workspace?.name]);
+    }, [fetchDashboardData, workspaceId, workspaceName]);
 
     useEffect(() => {
         if (workspace?.phone) {
@@ -224,6 +241,7 @@ export default function Dashboard(props: IProps) {
                 toast.success(data.message)
                 setLoggedIn(true)
                 setDispNumber(data?.data?.phone)
+                await fetchDashboardData(true)
             } catch (e) {
                 toast.error((e as any)?.response?.data?.message)
             } finally {
@@ -235,7 +253,7 @@ export default function Dashboard(props: IProps) {
         if (accessCode && phoneNumberId && wabaId) {
             authenticateBusiness()
         }
-    }, [accessCode, phoneNumberId, wabaId, workspaceId])
+    }, [accessCode, fetchDashboardData, phoneNumberId, router, wabaId, workspaceId])
 
 
     useEffect(() => {

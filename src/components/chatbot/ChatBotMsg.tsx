@@ -3,7 +3,6 @@ import { useEffect, useState } from "react"
 import useInput from "@/hooks/useInput"
 import TextInput from "./TextInput"
 import { DUMMY_PHOTO } from "@/libs/constants"
-import { FileType } from "@prisma/client"
 import { useSelector } from "react-redux"
 import { getCurrentWorkspace } from "@/store/slices/system"
 import { 
@@ -23,8 +22,10 @@ import {
 } from "lucide-react"
 import NextImage from 'next/image';
 
+export type FileTypeValue = 'none' | 'image' | 'video' | 'audio';
+
 export interface IMsgValue {
-    fileType: FileType;
+    fileType: FileTypeValue;
     text: string | null;
     link: string | null;
     location?: {
@@ -84,17 +85,17 @@ const DEFAULT_VALUES: IMsgValue = {
 };
 
 const FILE_TYPE_OPTIONS = [
-    { id: 'text', label: 'Text', icon: Type, fileType: 'none' as FileType },
-    { id: 'image', label: 'Image', icon: Image, fileType: 'image' as FileType },
-    { id: 'video', label: 'Video', icon: Video, fileType: 'video' as FileType },
-    { id: 'audio', label: 'Audio', icon: Headphones, fileType: 'audio' as FileType },
-    { id: 'file', label: 'File', icon: FileText, fileType: 'none' as FileType },
-    { id: 'interactive', label: 'Chatbot', icon: Network, fileType: 'none' as FileType },
-    { id: 'maps', label: 'Maps', icon: MapPin, fileType: 'none' as FileType },
-    { id: 'cta', label: 'CTA URL Button', icon: MousePointer, fileType: 'none' as FileType },
-    { id: 'api', label: 'HTTP API', icon: Zap, fileType: 'none' as FileType },
-    { id: 'condition', label: 'Condition', icon: Link, fileType: 'none' as FileType },
-    { id: 'template', label: 'Template Message', icon: Palette, fileType: 'none' as FileType },
+    { id: 'text', label: 'Text', icon: Type, fileType: 'none' as FileTypeValue },
+    { id: 'image', label: 'Image', icon: Image, fileType: 'image' as FileTypeValue },
+    { id: 'video', label: 'Video', icon: Video, fileType: 'video' as FileTypeValue },
+    { id: 'audio', label: 'Audio', icon: Headphones, fileType: 'audio' as FileTypeValue },
+    { id: 'file', label: 'File', icon: FileText, fileType: 'none' as FileTypeValue },
+    { id: 'interactive', label: 'Chatbot', icon: Network, fileType: 'none' as FileTypeValue },
+    { id: 'maps', label: 'Maps', icon: MapPin, fileType: 'none' as FileTypeValue },
+    { id: 'cta', label: 'CTA URL Button', icon: MousePointer, fileType: 'none' as FileTypeValue },
+    { id: 'api', label: 'HTTP API', icon: Zap, fileType: 'none' as FileTypeValue },
+    { id: 'condition', label: 'Condition', icon: Link, fileType: 'none' as FileTypeValue },
+    { id: 'template', label: 'Template Message', icon: Palette, fileType: 'none' as FileTypeValue },
 ];
 
 const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
@@ -278,7 +279,7 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
         if (['image', 'video', 'audio'].includes(selectedFileType)) {
             setState(prev => ({
                 ...prev,
-                fileType: selectedFileType as FileType
+                fileType: selectedFileType as FileTypeValue
             }));
         }
     }, [selectedFileType]);
@@ -302,10 +303,10 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
         setState(prev => {
             const newState = { ...prev };
             
-            if (['image', 'video', 'audio'].includes(fileTypeId)) {
-                newState.fileType = fileTypeId as FileType;
+                if (['image', 'video', 'audio'].includes(fileTypeId)) {
+                    newState.fileType = fileTypeId as FileTypeValue;
             } else {
-                newState.fileType = 'none' as FileType;
+                    newState.fileType = 'none' as FileTypeValue;
             }
             
             // Clear file-related values when switching away from file types

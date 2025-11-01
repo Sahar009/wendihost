@@ -1,28 +1,6 @@
 -- Sync database with current Prisma schema
 -- This migration adds missing columns and tables without dropping existing data
 
--- Add missing columns to existing tables
-ALTER TABLE "Campaign" ADD COLUMN IF NOT EXISTS "responseTemplate" TEXT;
-
--- Add missing columns to Workspace table
-ALTER TABLE "Workspace" ADD COLUMN IF NOT EXISTS "apiKey" TEXT;
-
--- Add missing columns to Contact table  
-ALTER TABLE "Contact" ADD COLUMN IF NOT EXISTS "tag" TEXT DEFAULT 'new';
-
--- Add missing columns to Conversation table
-ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "source" "MessageSource" DEFAULT 'DIRECT';
-ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "campaign_id" INTEGER;
-ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "widget_id" TEXT;
-ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "meta_ad_id" TEXT;
-
--- Add missing columns to Message table
-ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "isBot" BOOLEAN DEFAULT false;
-ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "fileType" "FileType" DEFAULT 'none';
-ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "link" TEXT;
-ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "messageId" TEXT;
-ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "status" "MessageStatus" DEFAULT 'sent';
-
 -- Create missing enums if they don't exist
 DO $$ BEGIN
     CREATE TYPE "Status" AS ENUM ('PENDING', 'FAILED', 'SUCCESS');
@@ -66,6 +44,28 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
+-- Add missing columns to existing tables
+ALTER TABLE "Campaign" ADD COLUMN IF NOT EXISTS "responseTemplate" TEXT;
+
+-- Add missing columns to Workspace table
+ALTER TABLE "Workspace" ADD COLUMN IF NOT EXISTS "apiKey" TEXT;
+
+-- Add missing columns to Contact table  
+ALTER TABLE "Contact" ADD COLUMN IF NOT EXISTS "tag" TEXT DEFAULT 'new';
+
+-- Add missing columns to Conversation table
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "source" "MessageSource" DEFAULT 'DIRECT';
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "campaign_id" INTEGER;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "widget_id" TEXT;
+ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "meta_ad_id" TEXT;
+
+-- Add missing columns to Message table
+ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "isBot" BOOLEAN DEFAULT false;
+ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "fileType" "FileType" DEFAULT 'none';
+ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "link" TEXT;
+ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "messageId" TEXT;
+ALTER TABLE "Message" ADD COLUMN IF NOT EXISTS "status" "MessageStatus" DEFAULT 'sent';
 
 -- Create missing tables
 CREATE TABLE IF NOT EXISTS "Assistant" (

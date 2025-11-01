@@ -5,12 +5,11 @@ import NodeWrapper from './NodeWrapper';
 import { useDispatch } from 'react-redux';
 import { updateMessage } from '@/store/slices/chatbotBuilderSlice';
 import { ChatFormatType } from '@/libs/types';
-import { FileType } from '@prisma/client';
 
 interface IProps extends Node {
     data: {
         message: string;
-        fileType: FileType;
+        fileType: string;
         link: string | null;
     }
 }
