@@ -108,6 +108,7 @@ const Flow = (props: IProps) => {
                 const parsedNodes = JSON.parse(chatbot.nodes as string) as Node[];
                 console.log('ChatbotBuilder: Loading nodes from database:', parsedNodes);
                 setNodes(parsedNodes);
+                dispatch(saveNodes(parsedNodes));
             } catch (error) {
                 console.error('Error parsing chatbot nodes:', error);
             }
@@ -117,7 +118,7 @@ const Flow = (props: IProps) => {
         setTimeout(() => {
             isInitialLoad.current = false;
         }, 500);
-    }, [setNodes, getNode, chatbot])
+    }, [chatbot, dispatch, getNode, setNodes])
 
     useEffect(() => {
         if (getEdge?.length > 0) {
@@ -126,11 +127,12 @@ const Flow = (props: IProps) => {
             try {
                 const parsedEdges = JSON.parse(chatbot.edges as string) as Edge[];
                 setEdges(parsedEdges);
+                dispatch(saveEdges(parsedEdges));
             } catch (error) {
                 console.error('Error parsing chatbot edges:', error);
             }
         }
-    }, [setEdges, getEdge, chatbot])
+    }, [chatbot, dispatch, getEdge, setEdges])
 
 
     return (
