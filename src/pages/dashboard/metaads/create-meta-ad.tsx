@@ -200,15 +200,15 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
               </p>
             </div>
             <div>
-              <label htmlFor="adText" className="block text-sm font-medium text-gray-700">
-                Ad Text
+              <label htmlFor="adText" className="block text-sm font-medium text-gray-700 mb-1">
+                Ad Text <span className="text-red-500">*</span>
               </label>
               <div className="mt-1">
                 <textarea
                   id="adText"
                   name="adText"
                   rows={4}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md px-3 py-2"
                   value={adText}
                   onChange={(e) => setAdText(e.target.value)}
                   placeholder={adType === 'whatsapp' ? 'Enter your WhatsApp message...' : 'Enter your ad text...'}
