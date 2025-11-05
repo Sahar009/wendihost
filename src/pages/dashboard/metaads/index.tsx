@@ -52,7 +52,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
   const user = props.user ? JSON.parse(props.user) : {};
 
   const [adName, setAdName] = useState('');
-  const [color, setColor] = useState('#40E0B');
+  const [color, setColor] = useState('#40E0B0');
   const [objective, setObjective] = useState(adObjectives[0]);
   const [targetAudience, setTargetAudience] = useState('');
   const [budget, setBudget] = useState('');
@@ -136,7 +136,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
       setTab('manager');
       // Reset form
       setAdName('');
-      setColor('#40E0B');
+      setColor('#40E0B0');
       setObjective(adObjectives[0]);
       setTargetAudience('');
       setBudget('');

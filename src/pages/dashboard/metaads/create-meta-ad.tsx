@@ -97,6 +97,65 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Manually validate required fields
+    if (!adName.trim()) {
+      const adNameInput = document.querySelector('input[name="adName"]') as HTMLElement;
+      if (adNameInput) {
+        adNameInput.focus();
+        adNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    if (!objective) {
+      const objectiveSelect = document.querySelector('select[name="objective"]') as HTMLElement;
+      if (objectiveSelect) {
+        objectiveSelect.focus();
+        objectiveSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    if (!adText.trim()) {
+      const adTextArea = document.querySelector('textarea[name="adText"]') as HTMLElement;
+      if (adTextArea) {
+        adTextArea.focus();
+        adTextArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    // Validate conditional fields based on ad type
+    if (adType === 'whatsapp' && !phoneNumber.trim()) {
+      const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLElement;
+      if (phoneInput) {
+        phoneInput.focus();
+        phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    
+    if (adType === 'facebook') {
+      if (!pageId.trim()) {
+        const pageIdInput = document.querySelector('input[name="pageId"]') as HTMLElement;
+        if (pageIdInput) {
+          pageIdInput.focus();
+          pageIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+      
+      if (!websiteUrl.trim()) {
+        const websiteUrlInput = document.querySelector('input[name="websiteUrl"]') as HTMLElement;
+        if (websiteUrlInput) {
+          websiteUrlInput.focus();
+          websiteUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+    }
+    
     onSubmit(e);
   };
 
@@ -110,6 +169,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
         className="flex-1 max-w-xl bg-white rounded-xl shadow p-6 flex flex-col gap-6"
         onSubmit={handleSubmit}
         encType="multipart/form-data"
+        noValidate
       >
         <h2 className="text-xl font-semibold mb-2">Create a new ad</h2>
         {/* Ad Type Selection */}
