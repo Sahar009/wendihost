@@ -97,65 +97,8 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Manually validate required fields
-    if (!adName.trim()) {
-      const adNameInput = document.querySelector('input[name="adName"]') as HTMLElement;
-      if (adNameInput) {
-        adNameInput.focus();
-        adNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-    
-    if (!objective) {
-      const objectiveSelect = document.querySelector('select[name="objective"]') as HTMLElement;
-      if (objectiveSelect) {
-        objectiveSelect.focus();
-        objectiveSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-    
-    if (!adText.trim()) {
-      const adTextArea = document.querySelector('textarea[name="adText"]') as HTMLElement;
-      if (adTextArea) {
-        adTextArea.focus();
-        adTextArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-    
-    // Validate conditional fields based on ad type
-    if (adType === 'whatsapp' && !phoneNumber.trim()) {
-      const phoneInput = document.querySelector('input[name="phoneNumber"]') as HTMLElement;
-      if (phoneInput) {
-        phoneInput.focus();
-        phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-    
-    if (adType === 'facebook') {
-      if (!pageId.trim()) {
-        const pageIdInput = document.querySelector('input[name="pageId"]') as HTMLElement;
-        if (pageIdInput) {
-          pageIdInput.focus();
-          pageIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-      }
-      
-      if (!websiteUrl.trim()) {
-        const websiteUrlInput = document.querySelector('input[name="websiteUrl"]') as HTMLElement;
-        if (websiteUrlInput) {
-          websiteUrlInput.focus();
-          websiteUrlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-      }
-    }
-    
+    // Validation is handled in the parent component (index.tsx)
+    // Just call onSubmit which will handle validation and API call
     onSubmit(e);
   };
 
@@ -351,6 +294,11 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
             </label>
           </div>
         </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
         <div className="flex justify-end gap-4 mt-6">
           <button
             type="button"

@@ -91,7 +91,73 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
     try {
       if (!workspaceId) {
         setError('No workspace selected');
+        setIsLoading(false);
         return;
+      }
+
+      // Validate required fields
+      if (!adName.trim()) {
+        setError('Ad name is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!objective) {
+        setError('Objective is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!targetAudience.trim()) {
+        setError('Target audience is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!budget || parseFloat(budget) <= 0) {
+        setError('Budget must be greater than 0');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!startDate) {
+        setError('Start date is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!endDate) {
+        setError('End date is required');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!adText.trim()) {
+        setError('Ad text is required');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate conditional fields
+      if (adType === 'facebook') {
+        if (!pageId.trim()) {
+          setError('Facebook Page ID is required for Facebook ads');
+          setIsLoading(false);
+          return;
+        }
+        if (!websiteUrl.trim()) {
+          setError('Website URL is required for Facebook ads');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      if (adType === 'whatsapp') {
+        if (!phoneNumber.trim()) {
+          setError('Phone number is required for WhatsApp ads');
+          setIsLoading(false);
+          return;
+        }
       }
 
       const adData = {
@@ -111,14 +177,6 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
         websiteUrl,
         workspaceId
       };
-
-      const requiredFields = ['adName', 'objective', 'targetAudience', 'budget', 'startDate', 'endDate', 'adText', 'cta'];
-      const missingFields = requiredFields.filter(field => !adData[field as keyof typeof adData]);
-      
-      if (missingFields.length > 0) {
-        setError(`Missing required fields: ${missingFields.join(', ')}`);
-        return;
-      }
 
       const response = await fetch('/api/metaads/create', {
         method: 'POST',
