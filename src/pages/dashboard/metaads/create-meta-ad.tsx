@@ -138,7 +138,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
           <h3 className="font-medium mb-3">Basic info</h3>
           <div className="flex flex-col gap-3">
             <label className="text-sm">Ad name
-              <input type="text" className="mt-1 w-full border rounded px-3 py-2" value={adName} onChange={e => setAdName(e.target.value)} required />
+              <input type="text" name="adName" className="mt-1 w-full border rounded px-3 py-2" value={adName} onChange={e => setAdName(e.target.value)} required />
             </label>
             <label className="text-sm">Color
               <input type="color" className="ml-2 align-middle" value={color} onChange={e => setColor(e.target.value)} />
@@ -149,6 +149,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
               </label>
               <select
                 id="objective"
+                name="objective"
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -202,6 +203,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
               <div className="mt-1">
                 <textarea
                   id="adText"
+                  name="adText"
                   rows={4}
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
                   value={adText}
@@ -225,6 +227,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                   <input
                     type="tel"
                     id="phoneNumber"
+                    name="phoneNumber"
                     className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
@@ -247,6 +250,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                     <input
                       type="text"
                       id="pageId"
+                      name="pageId"
                       className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                       value={pageId}
                       onChange={(e) => setPageId(e.target.value)}
@@ -266,6 +270,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                     <input
                       type="url"
                       id="websiteUrl"
+                      name="websiteUrl"
                       className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                       value={websiteUrl}
                       onChange={(e) => setWebsiteUrl(e.target.value)}
