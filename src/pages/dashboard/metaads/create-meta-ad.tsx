@@ -199,16 +199,28 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                 Supported formats: .jpg, .jpeg, .png, .mp4
               </p>
             </div>
-            <div>
+            <div className="w-full">
               <label htmlFor="adText" className="block text-sm font-medium text-gray-700 mb-1">
                 Ad Text <span className="text-red-500">*</span>
               </label>
-              <div className="mt-1">
+              <div className="mt-1 w-full">
                 <textarea
                   id="adText"
                   name="adText"
                   rows={4}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md px-3 py-2"
+                  style={{ 
+                    display: 'block',
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.25rem',
+                    color: '#111827'
+                  }}
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900"
                   value={adText}
                   onChange={(e) => setAdText(e.target.value)}
                   placeholder={adType === 'whatsapp' ? 'Enter your WhatsApp message...' : 'Enter your ad text...'}
