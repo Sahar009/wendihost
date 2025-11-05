@@ -4,6 +4,7 @@ import { Upload } from '@/components/utils/Upload';
 type AdType = 'facebook' | 'whatsapp';
 
 interface CreateMetaAdProps {
+  workspaceId: number;
   adName: string;
   setAdName: (value: string) => void;
   color: string;
@@ -49,6 +50,7 @@ const callToActions = {
 };
 
 const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
+  workspaceId,
   adName,
   setAdName,
   color,
@@ -185,7 +187,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
               <Upload 
                 link={mediaUrl}
                 accept=".jpg,.jpeg,.png,.mp4"
-                workspaceId={1} // You'll want to get this from your app's state
+                workspaceId={workspaceId}
                 onUploadComplete={handleUploadComplete}
                 onError={handleUploadError}
               />

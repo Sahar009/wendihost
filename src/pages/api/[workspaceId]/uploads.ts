@@ -73,9 +73,15 @@ export default withIronSessionApiRoute(
                     })
 
                     uploads.push(upload)
-                } catch (uploadError) {
+                } catch (uploadError: any) {
                     console.error('Cloudinary upload error:', uploadError);
-                    throw new Error(`Failed to upload ${fileName} to Cloudinary`);
+                    
+                    // If it's a DNS error, return a more helpful message
+                    if (uploadError.code === 'EAI_AGAIN') {
+                        return new ServerError(res, 500, "Cloudinary connection failed. Please check your internet connection and Cloudinary credentials.")
+                    }
+                    
+                    throw new Error(`Failed to upload ${fileName} to Cloudinary: ${uploadError.message}`);
                 }
             }
 

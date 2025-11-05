@@ -475,6 +475,33 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
       
       if (!conversation) {
         console.log('Creating new conversation for phone:', normalizedPhone);
+        
+        // Check if this might be from a WhatsApp Meta Ad (if user is a new contact)
+        let metaAdId: string | undefined = undefined;
+        const isNewContact = !contact.phone || contact.phone === 'WhatsApp'; // Check if contact was just created
+        
+        if (isNewContact) {
+          // Look for active WhatsApp Meta Ads in the last 7 days
+          const recentAds = await prisma.metaAd.findMany({
+            where: {
+              workspaceId: workspace.id,
+              adType: 'WHATSAPP',
+              createdAt: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+              }
+            },
+            orderBy: {
+              createdAt: 'desc'
+            },
+            take: 1
+          });
+          
+          if (recentAds.length > 0) {
+            metaAdId = recentAds[0].id;
+            console.log('Attributing conversation to Meta Ad:', metaAdId);
+          }
+        }
+        
         conversation = await prisma.conversation.create({
           data: {
             phone: normalizedPhone,
@@ -487,6 +514,8 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
             read: false,
             assigned: false,
             status: 'open',
+            source: metaAdId ? 'META_ADS' : 'DIRECT',
+            metaAd: metaAdId ? { connect: { id: metaAdId } } : undefined,
             updatedAt: new Date()
           }
         });

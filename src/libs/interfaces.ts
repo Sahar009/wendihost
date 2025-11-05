@@ -79,6 +79,24 @@ export interface ICHATBOT_NODE {
     nodeId: string;
     next: string | null;
     needResponse: boolean;
+    location?: {
+        latitude: number;
+        longitude: number;
+        address: string;
+        name?: string;
+    } | null;
+    cta?: {
+        buttonText: string;
+        url: string;
+        style?: 'primary' | 'secondary' | 'outline';
+    } | null;
+    api?: {
+        endpoint: string;
+        method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+        headers?: Record<string, string>;
+        body?: string;
+        description?: string;
+    } | null;
 }
 
 export interface IAuthProps {

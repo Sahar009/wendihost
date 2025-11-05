@@ -33,16 +33,16 @@ const AutomationCard = ({ imageSrc, title, description, buttonText, onClick }: {
     buttonText: string;
     onClick?: () => void;
 }) => (
-    <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center w-full max-w-xs min-h-[340px]">
-        <div className='flex flex-col items-center justify-center bg-[#F5F5F5] w-full h-full rounded-lg p-4'>
+    <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center flex-1 min-h-[380px]">
+        <div className='flex flex-col items-center justify-center bg-[#F5F5F5] w-full rounded-lg p-8 mb-6'>
             <div className="mb-4">
-                <Image src={imageSrc} alt={title} width={100} height={100} className="object-contain" />
+                <Image src={imageSrc} alt={title} width={120} height={120} className="object-contain" />
             </div>
         </div>
-        <h3 className="font-semibold text-lg text-center mb-1">{title}</h3>
-        <p className="text-gray-500 text-sm text-center mb-6">{description}</p>
+        <h3 className="font-semibold text-xl text-center mb-2">{title}</h3>
+        <p className="text-gray-500 text-sm text-center mb-6 flex-1">{description}</p>
         <button
-            className="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition text-base"
+            className="mt-auto w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition text-base"
             onClick={onClick}
         >
             {buttonText}

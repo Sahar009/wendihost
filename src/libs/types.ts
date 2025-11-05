@@ -1,4 +1,4 @@
-export type StatusCode =  200 | 201 | 300 | 301 | 302 | 400 | 401 | 404 | 405 | 500 | 502
+export type StatusCode =  200 | 201 | 300 | 301 | 302 | 400 | 401 | 403 | 404 | 405 | 500 | 502
 
 export type ChatComponentType =  "HEADER" | "BODY" | "FOOTER" | "BUTTONS"
 

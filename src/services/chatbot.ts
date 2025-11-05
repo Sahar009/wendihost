@@ -19,7 +19,25 @@ export interface IMessage {
     fileType: ACCEPTED_FILES;
     openChat: boolean,
     type: CUSTOM_NODE,
-    children: ICHATBOT_NODE[]
+    children: ICHATBOT_NODE[],
+    location?: {
+        latitude: number;
+        longitude: number;
+        address: string;
+        name?: string;
+    } | null,
+    cta?: {
+        buttonText: string;
+        url: string;
+        style?: 'primary' | 'secondary' | 'outline';
+    } | null,
+    api?: {
+        endpoint: string;
+        method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+        headers?: Record<string, string>;
+        body?: string;
+        description?: string;
+    } | null;
 }
 
 export interface IInteractiveMessage {
@@ -613,7 +631,10 @@ const generateMessages = (bot: any, node = "start"): IMessage[] => {
             fileType: botNode.fileType,
             openChat: botNode.type === CUSTOM_NODE.CHAT_WITH_AGENT,
             type: botNode.type,
-            children: botNode.children
+            children: botNode.children,
+            location: botNode.location || null,
+            cta: botNode.cta || null,
+            api: botNode.api || null
         }
     
     })

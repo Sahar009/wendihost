@@ -1,7 +1,7 @@
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSelector } from 'react-redux';
 import { getCurrentWorkspace } from '@/store/slices/system';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import MetaAdsTable from './MetaAdsTable';
 import MetaAdsSetup from './MetaAdsSetup';
 import { withIronSessionSsr } from 'iron-session/next'
@@ -46,7 +46,8 @@ const callToActions = [
 ];
 
 export default function MetaAds(props: IProps) {
-  const { id: workspaceId } = useSelector(getCurrentWorkspace);
+  const workspace = useSelector(getCurrentWorkspace);
+  const workspaceId = workspace?.id;
 const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
   const user = props.user ? JSON.parse(props.user) : {};
 
@@ -74,6 +75,13 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-fill page ID from workspace
+  useEffect(() => {
+    if (workspace?.facebookPageId && !pageId) {
+      setPageId(workspace.facebookPageId);
+    }
+  }, [workspace?.facebookPageId, pageId]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,9 +179,11 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
           </div>
           {/* Action buttons right */}
           <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:gap-2">
-            <button className="w-full sm:w-auto bg-white border border-blue-100 text-primary px-4 py-2 rounded-md font-medium text-xs sm:text-sm">
-              Connect and setup a meta add account
-            </button>
+            {!workspace?.accessToken && (
+              <button className="w-full sm:w-auto bg-white border border-blue-100 text-primary px-4 py-2 rounded-md font-medium text-xs sm:text-sm" onClick={() => setTab('setup')}>
+                Connect and setup a meta add account
+              </button>
+            )}
             <button className={`w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-md font-medium text-xs sm:text-sm ${tab === 'create' ? 'bg-blue-700 text-white' : 'bg-primary text-white'}`} onClick={() => setTab('create')}>
               Create Ad
             </button>
@@ -184,6 +194,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
         {tab === 'create' && (
           <div className="flex flex-col md:flex-row gap-8 p-6 min-h-screen bg-gray-50">
             <CreateMetaAd 
+              workspaceId={workspaceId}
               adName={adName}
               setAdName={setAdName}
               color={color}

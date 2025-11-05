@@ -118,21 +118,26 @@ const createFacebookAd = async (params: CreateMetaAdRequest['body'], accessToken
     const adSetId = adSet._data?.id || adSet.id;
 
     // Create creative
-    const creative = await adAccount.createAdCreative([
-      {
-        name: `${params.adName} Creative`,
-        object_story_spec: {
-          page_id: params.pageId,
-          link_data: {
-            link: params.websiteUrl,
-            message: params.adText,
-            call_to_action: {
-              type: CTA_MAP[params.cta as keyof typeof CTA_MAP] || 'LEARN_MORE',
-            },
+    const creativeData: any = {
+      name: `${params.adName} Creative`,
+      object_story_spec: {
+        page_id: params.pageId,
+        link_data: {
+          link: params.websiteUrl,
+          message: params.adText,
+          call_to_action: {
+            type: CTA_MAP[params.cta as keyof typeof CTA_MAP] || 'LEARN_MORE',
           },
         },
       },
-    ]);
+    };
+
+    // Add image if provided
+    if (params.mediaUrl) {
+      creativeData.object_story_spec.link_data.image_url = params.mediaUrl;
+    }
+
+    const creative = await adAccount.createAdCreative([creativeData]);
 
     const creativeId = (creative as any)._data.id;
 
@@ -345,6 +350,10 @@ export default withIronSessionApiRoute(
           adText: req.body.adText,
           cta: req.body.cta,
           phoneNumber: req.body.phoneNumber || null,
+          facebookAdId: result.adId || null,
+          campaignId: result.campaignId || null,
+          adSetId: result.adSetId || null,
+          creativeId: result.creativeId || null,
           userId: user.id,
           workspaceId: Number(req.body.workspaceId),
         },

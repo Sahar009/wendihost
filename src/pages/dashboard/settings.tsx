@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import ProfileSettings from '@/components/dashboard/settings/ProfileSettings';
 import AccountSettings from '@/components/dashboard/settings/AccountSettings';
 import Api from '@/components/dashboard/settings/Api';
+import WorkspaceSettings from '@/components/dashboard/settings/WorkspaceSettings';
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session'
 import { withIronSessionSsr } from 'iron-session/next'
 import { useState } from 'react'
@@ -34,13 +35,14 @@ export default function SettingsPage(props: IProps) {
       <div className="min-h-screen bg-gray-50 px-2 md:px-8 py-8">
         <h1 className="text-xl font-bold mb-4">Settings</h1>
         <Tabs
-          tabs={["Profile settings", "Account", "Api"]}
+          tabs={["Profile settings", "Account", "Api", "Workspace"]}
           index={tab}
           setIndex={setTab}
         />
         {tab === 0 && <ProfileSettings />}
         {tab === 1 && <AccountSettings />}
         {tab === 2 && <Api />}
+        {tab === 3 && <WorkspaceSettings userId={user.id} workspaces={user.workspaces || []} />}
       </div>
     </DashboardLayout>
   );

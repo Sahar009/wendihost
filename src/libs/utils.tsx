@@ -160,7 +160,7 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
 
             let message = data.message || ""
 
-            const { link, fileType } = data
+            const { link, fileType, location, cta, api } = data
 
             console.log({data})
             console.log({fileType})
@@ -193,7 +193,10 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
                 message,
                 link,
                 fileType: String(fileType || "none").toLowerCase() as ACCEPTED_FILES,
-                needResponse: data?.children?.length > 0 ? true : false
+                needResponse: data?.children?.length > 0 ? true : false,
+                location: location || null,
+                cta: cta || null,
+                api: api || null
             } 
 
             console.log({chatbotNode})
@@ -220,7 +223,7 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
 
         let message = data.message
 
-        const {link, fileType } = data
+        const {link, fileType, location, cta, api } = data
 
         const chatbotNode : ICHATBOT_NODE = {
             nodeId: id,
@@ -230,7 +233,10 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
             message,
             link,
             fileType,
-            needResponse: hasChildren
+            needResponse: hasChildren,
+            location: location || null,
+            cta: cta || null,
+            api: api || null
         } 
 
         if (parentNode) {
@@ -253,7 +259,10 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
                         nodeId: workingNode.id,
                         children: [],
                         message: workingNode.data.message,
-                        needResponse: false
+                        needResponse: false,
+                        location: workingNode.data.location || null,
+                        cta: workingNode.data.cta || null,
+                        api: workingNode.data.api || null
                     } 
                 }
                 return child

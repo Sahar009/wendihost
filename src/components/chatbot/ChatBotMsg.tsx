@@ -94,7 +94,6 @@ const FILE_TYPE_OPTIONS = [
     { id: 'maps', label: 'Maps', icon: MapPin, fileType: 'none' as FileTypeValue },
     { id: 'cta', label: 'CTA URL Button', icon: MousePointer, fileType: 'none' as FileTypeValue },
     { id: 'api', label: 'HTTP API', icon: Zap, fileType: 'none' as FileTypeValue },
-    { id: 'condition', label: 'Condition', icon: Link, fileType: 'none' as FileTypeValue },
     { id: 'template', label: 'Template Message', icon: Palette, fileType: 'none' as FileTypeValue },
 ];
 
@@ -121,7 +120,6 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
         if (state.location) return 'maps';
         if (state.cta) return 'cta';
         if (state.api) return 'api';
-        if (state.condition) return 'condition';
         if (state.interactive) return 'interactive';
         if (state.template) return 'template';
         
@@ -332,11 +330,6 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
             // Clear API when switching away from API
             if (fileTypeId !== 'api') {
                 newState.api = null;
-            }
-            
-            // Clear condition when switching away from condition
-            if (fileTypeId !== 'condition') {
-                newState.condition = null;
             }
             
             // Clear interactive when switching away from interactive

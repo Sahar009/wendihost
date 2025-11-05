@@ -2,9 +2,31 @@ import { DUMMY_PHOTO, FACEBOOK_BASE_ENDPOINT } from "@/libs/constants"
 import { facebookAuth } from "../facebook"
 import { Workspace } from "@prisma/client"
 import { IMessage } from "../chatbot"
+import axios from "axios"
 
 
 export const handleTextMsgType = async (workspace: Workspace, phone: string, chat: IMessage) => {
+    // Handle location first (if present)
+    if (chat.location) {
+        await sendLocationMsg(workspace, phone, chat.location)
+        // If there's also text, send it as a separate message
+        if (chat.message) {
+            await sendTextMsg(workspace, phone, chat.message)
+        }
+        return
+    }
+
+    // Handle CTA button (if present)
+    if (chat.cta) {
+        await sendCtaButtonMsg(workspace, phone, chat.message || chat.cta.buttonText, chat.cta)
+        return
+    }
+
+    // Handle HTTP API call (if present)
+    if (chat.api) {
+        await executeAndSendApiResponse(workspace, phone, chat.api, chat.message)
+        return
+    }
 
     // Handle both relative and absolute URLs
     let link = chat.link;
@@ -205,6 +227,139 @@ export const sendButtonMsg = async (workspace: Workspace, phone: string, content
 }
 
 
+
+export const sendLocationMsg = async (workspace: Workspace, phone: string, location: { latitude: number; longitude: number; name?: string; address?: string }) => {
+    try {
+        const body = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": phone,
+            "type": "location",
+            "location": {
+                "latitude": location.latitude,
+                "longitude": location.longitude,
+                "name": location.name || "",
+                "address": location.address || ""
+            }
+        }
+        const res = await facebookAuth(workspace.accessToken).post(`${FACEBOOK_BASE_ENDPOINT}/${workspace.phoneId}/messages`, body)
+        console.log('✅ CHATBOT: Location sent successfully');
+        return res.data
+    } catch (e: any) {
+        console.error('❌ CHATBOT: Error sending location:', e.response?.data || e.message)
+        return false
+    }
+}
+
+export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, content: string, cta: { buttonText: string; url: string }) => {
+    try {
+        const body = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": phone,
+            "type": "interactive",
+            "interactive": {
+                "type": "button",
+                "body": {
+                    "text": content
+                },
+                "action": {
+                    "buttons": [
+                        {
+                            "type": "url",
+                            "url": cta.url,
+                            "title": cta.buttonText
+                        }
+                    ]
+                }
+            }
+        }
+        const res = await facebookAuth(workspace.accessToken).post(`${FACEBOOK_BASE_ENDPOINT}/${workspace.phoneId}/messages`, body)
+        console.log('✅ CHATBOT: CTA button sent successfully');
+        return res.data
+    } catch (e: any) {
+        console.error('❌ CHATBOT: Error sending CTA button:', e.response?.data || e.message)
+        return false
+    }
+}
+
+export const executeAndSendApiResponse = async (
+    workspace: Workspace, 
+    phone: string, 
+    apiConfig: { endpoint: string; method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; headers?: Record<string, string>; body?: string }, 
+    initialMessage?: string
+) => {
+    try {
+        console.log('🌐 CHATBOT: Executing HTTP API call:', {
+            endpoint: apiConfig.endpoint,
+            method: apiConfig.method
+        });
+
+        // Send initial message if provided
+        if (initialMessage) {
+            await sendTextMsg(workspace, phone, initialMessage)
+        }
+
+        // Prepare request config
+        const config: any = {
+            method: apiConfig.method,
+            url: apiConfig.endpoint,
+            headers: {
+                'Content-Type': 'application/json',
+                ...(apiConfig.headers || {})
+            },
+            timeout: 30000 // 30 second timeout
+        };
+
+        // Add body for POST, PUT, PATCH requests
+        if (['POST', 'PUT', 'PATCH'].includes(apiConfig.method) && apiConfig.body) {
+            try {
+                config.data = JSON.parse(apiConfig.body)
+            } catch (e) {
+                // If body is not valid JSON, send as string
+                config.data = apiConfig.body
+            }
+        }
+
+        // Execute API call
+        const response = await axios(config)
+
+        // Format the response
+        let responseText = '';
+        if (typeof response.data === 'string') {
+            responseText = response.data;
+        } else if (response.data) {
+            try {
+                responseText = JSON.stringify(response.data, null, 2);
+            } catch (e) {
+                responseText = String(response.data);
+            }
+        } else {
+            responseText = `API call successful. Status: ${response.status}`;
+        }
+
+        // Truncate if too long (WhatsApp has character limits)
+        if (responseText.length > 4000) {
+            responseText = responseText.substring(0, 4000) + '\n\n... (response truncated)';
+        }
+
+        // Send API response as WhatsApp message
+        await sendTextMsg(workspace, phone, responseText)
+        console.log('✅ CHATBOT: API response sent successfully');
+        return true
+
+    } catch (e: any) {
+        console.error('❌ CHATBOT: Error executing API call:', e.response?.data || e.message)
+        
+        // Send error message to user
+        const errorMessage = e.response?.data 
+            ? `API Error: ${JSON.stringify(e.response.data)}`
+            : `API Error: ${e.message || 'Unknown error occurred'}`;
+        
+        await sendTextMsg(workspace, phone, errorMessage.substring(0, 4000))
+        return false
+    }
+}
 
 export const downloadFile = async (accessToken: string, fileId: string) => {
     try {

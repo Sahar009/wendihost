@@ -2,7 +2,7 @@ import { Workspace } from '@prisma/client';
 import { createSlice } from '@reduxjs/toolkit';
 
 interface IState {
-    current: Workspace & { lastSyncAt: Date | null },
+    current: Workspace & { lastSyncAt: Date | null; facebookAppId?: string | null; facebookConfigId?: string | null; facebookPageId?: string | null },
     all: Workspace[]
 }
 
@@ -16,6 +16,7 @@ const initialState : IState = {
     fbUserId: null,
     facebookAppId: null,
     facebookConfigId: null,
+    facebookPageId: null,
     phone: null,
     accessToken: null,
     businessId: null,

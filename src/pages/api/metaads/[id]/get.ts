@@ -4,6 +4,7 @@ import { sessionCookie, validateUserApi } from '@/services/session';
 import prisma from '@/libs/prisma';
 import { ApiResponse } from '@/libs/types';
 import ServerError from '@/services/errors/serverError';
+import axios from 'axios';
 
 interface GetMetaAdByIdRequest extends NextApiRequest {
   query: {
@@ -45,6 +46,11 @@ export default withIronSessionApiRoute(
           adText: true,
           cta: true,
           phoneNumber: true,
+          facebookAdId: true,
+          campaignId: true,
+          adSetId: true,
+          creativeId: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -54,19 +60,63 @@ export default withIronSessionApiRoute(
         return new ServerError(res, 404, 'MetaAd not found');
       }
 
-      const stats = [
+      // Fetch Facebook Insights if we have the Facebook Ad ID
+      let stats = [
         { label: 'Impression', value: 0 },
         { label: 'Spend', value: 0 },
         { label: 'Reach', value: 0 },
         { label: 'Clicks', value: 0 },
         { label: 'Leads', value: 0 },
       ];
+      let reach = 0;
+
+      if (metaAd.facebookAdId && validatedInfo.workspace.accessToken) {
+        try {
+          // Fetch insights using Facebook Graph API directly
+          const insightsResponse = await axios.get(
+            `https://graph.facebook.com/v21.0/${metaAd.facebookAdId}/insights`,
+            {
+              params: {
+                fields: 'impressions,reach,clicks,spend,actions',
+                access_token: validatedInfo.workspace.accessToken
+              }
+            }
+          );
+
+          if (insightsResponse.data && insightsResponse.data.data && insightsResponse.data.data.length > 0) {
+            const data = insightsResponse.data.data[0];
+            const impressions = parseInt(data.impressions || '0');
+            const clicks = parseInt(data.clicks || '0');
+            const spend = parseFloat(data.spend || '0');
+            reach = parseInt(data.reach || '0');
+            
+            let leads = 0;
+            if (data.actions) {
+              const leadActions = data.actions.filter((action: any) => 
+                action.action_type === 'lead' || action.action_type === 'onsite_conversion.lead_generation'
+              );
+              leads = leadActions.reduce((sum: number, action: any) => sum + parseInt(action.value || '0'), 0);
+            }
+
+            stats = [
+              { label: 'Impression', value: impressions },
+              { label: 'Spend', value: spend },
+              { label: 'Reach', value: reach },
+              { label: 'Clicks', value: clicks },
+              { label: 'Leads', value: leads },
+            ];
+          }
+        } catch (insightError) {
+          console.error('Error fetching Facebook Insights:', insightError);
+          // Continue with zero stats if fetch fails
+        }
+      }
 
       const transformedAd = {
         id: metaAd.id,
         name: metaAd.adName,
-        status: 'DRAFT',
-        reach: 0, 
+        status: metaAd.status || 'DRAFT',
+        reach: reach, 
         createdAt: metaAd.createdAt.toLocaleDateString(),
         adType: metaAd.adType,
         color: metaAd.color,
@@ -79,10 +129,10 @@ export default withIronSessionApiRoute(
         adText: metaAd.adText,
         cta: metaAd.cta,
         phoneNumber: metaAd.phoneNumber,
-        facebookAdId: null,
-        campaignId: null, 
-        adSetId: null, 
-        creativeId: null, 
+        facebookAdId: metaAd.facebookAdId,
+        campaignId: metaAd.campaignId, 
+        adSetId: metaAd.adSetId, 
+        creativeId: metaAd.creativeId, 
         workspace: { id: Number(workspaceId), name: 'Workspace' },
         user: { id: 0, firstName: 'User', lastName: 'Name' }, 
         stats,

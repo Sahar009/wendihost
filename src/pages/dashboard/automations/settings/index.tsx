@@ -686,30 +686,10 @@ const AutomationsSettingsPage = (props: IProps) => {
                                                             onChange={(e) => updateRuleResponseType(rule.id, e.target.value as any)}
                                                             className="border border-gray-300 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                         >
-                                                                                                                    <option value="text">
-                                                            <div className="flex items-center gap-2">
-                                                                <MessageSquare className="w-4 h-4" />
-                                                                Text Message
-                                                            </div>
-                                                        </option>
-                                                        <option value="chatbot">
-                                                            <div className="flex items-center gap-2">
-                                                                <Bot className="w-4 h-4" />
-                                                                Chatbot Flow
-                                                            </div>
-                                                        </option>
-                                                        <option value="ai">
-                                                            <div className="flex items-center gap-2">
-                                                                <Brain className="w-4 h-4" />
-                                                                AI Response
-                                                            </div>
-                                                        </option>
-                                                        <option value="template">
-                                                            <div className="flex items-center gap-2">
-                                                                <FileText className="w-4 h-4" />
-                                                                WhatsApp Template
-                                                            </div>
-                                                        </option>
+                                                            <option value="text">Text Message</option>
+                                                            <option value="chatbot">Chatbot Flow</option>
+                                                            <option value="ai">AI Response</option>
+                                                            <option value="template">WhatsApp Template</option>
                                                         </select>
                                                         <span className={`px-2 py-1 text-xs rounded-full ${
                                                             rule.responseType === 'text' ? 'bg-blue-100 text-blue-800' :
@@ -865,30 +845,10 @@ const AutomationsSettingsPage = (props: IProps) => {
                                                         onChange={(e) => updateRuleResponseType(rule.id, e.target.value as any)}
                                                         className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     >
-                                                        <option value="text">
-                                                            <div className="flex items-center gap-2">
-                                                                <MessageSquare className="w-4 h-4" />
-                                                                Text Message
-                                                            </div>
-                                                        </option>
-                                                        <option value="chatbot">
-                                                            <div className="flex items-center gap-2">
-                                                                <Bot className="w-4 h-4" />
-                                                                Chatbot Flow
-                                                            </div>
-                                                        </option>
-                                                        <option value="ai">
-                                                            <div className="flex items-center gap-2">
-                                                                <Brain className="w-4 h-4" />
-                                                                AI Response
-                                                            </div>
-                                                        </option>
-                                                        <option value="template">
-                                                            <div className="flex items-center gap-2">
-                                                                <FileText className="w-4 h-4" />
-                                                                WhatsApp Template
-                                                            </div>
-                                                        </option>
+                                                        <option value="text">Text Message</option>
+                                                        <option value="chatbot">Chatbot Flow</option>
+                                                        <option value="ai">AI Response</option>
+                                                        <option value="template">WhatsApp Template</option>
                                                     </select>
                                                     <span className={`px-2 py-1 text-xs rounded-full ${
                                                         rule.responseType === 'text' ? 'bg-blue-100 text-blue-800' :
