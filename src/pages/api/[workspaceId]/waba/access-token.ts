@@ -25,6 +25,14 @@ export default withIronSessionApiRoute(
 
       const url = "https://graph.facebook.com/v21.0/oauth/access_token";
       
+      console.log('Exchanging code for access token', {
+        hasAppId: !!FACEBOOK_APP_ID,
+        appId: FACEBOOK_APP_ID,
+        secretLength: FACEBOOK_CLIENT_SECRET?.length,
+        hasCode: !!code,
+        codeLength: code?.length,
+      });
+
       const response = await axios.post(url, 
         JSON.stringify({
           "client_id": FACEBOOK_APP_ID,
