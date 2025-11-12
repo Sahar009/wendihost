@@ -63,6 +63,7 @@ export default function Dashboard(props: IProps) {
     };
     const [monthlyClicks, setMonthlyClicks] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFacebookReady, setIsFacebookReady] = useState(false);
     const router = useRouter()
     
     // Track component lifecycle
@@ -114,6 +115,26 @@ export default function Dashboard(props: IProps) {
         }
     }
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleFacebookReady = () => {
+            if (window.FB && typeof window.FB.login === 'function') {
+                setIsFacebookReady(true);
+            }
+        };
+
+        if (window.FB && typeof window.FB.login === 'function') {
+            setIsFacebookReady(true);
+        }
+
+        window.addEventListener('facebook-sdk-ready', handleFacebookReady);
+
+        return () => {
+            window.removeEventListener('facebook-sdk-ready', handleFacebookReady);
+        };
+    }, []);
+
     const launchWhatsAppSignup = () => {
         const facebookAppId = process.env.NEXT_PUBLIC_FB_APP_ID;
         
@@ -122,6 +143,11 @@ export default function Dashboard(props: IProps) {
             app_id: facebookAppId,
             response_type: 'code'
         });
+        
+        if (!isFacebookReady || !window?.FB || typeof window.FB.login !== 'function') {
+            toast.error('Facebook is still initializing. Please try again in a moment.');
+            return;
+        }
         
         if (!FACEBOOK_CONFIG_ID) {
             toast.error('Facebook configuration is missing. Please check your environment variables.');
@@ -348,7 +374,7 @@ export default function Dashboard(props: IProps) {
                                     <div className='flex justify-between items-center '>
                                         <p className='text-lg font-semibold text-white'>Link your WhatsApp Business</p>
                                         <div className='w-56'>
-                                            <LoadingButton onClick={launchWhatsAppSignup} color='green'>Connect Account</LoadingButton>
+                                            <LoadingButton onClick={launchWhatsAppSignup} color='green' disabled={!isFacebookReady}>Connect Account</LoadingButton>
                                         </div>
                                     </div>
                                     

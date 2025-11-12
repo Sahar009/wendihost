@@ -28,19 +28,37 @@ export default function App({ Component, ...props }: AppProps) {
   const { pageProps } = props;
 
   useEffect(() => {
+    const dispatchReady = () => window.dispatchEvent(new Event('facebook-sdk-ready'));
 
-    window.fbAsyncInit = function() {
-      //2. FB JavaScript SDK configuration and setup
-      window?.FB.init({
-        appId      : FACEBOOK_APP_ID, // FB App ID
-        cookie     : true,  // enable cookies to allow the server to access the session
-        xfbml      : true,  // parse social plugins on this page
-        version    : 'v21.0' // uses graph api version v4.0
+    const initializeFacebookSdk = () => {
+      if (!FACEBOOK_APP_ID) {
+        console.warn('Facebook App ID is missing; SDK init skipped.');
+        return;
+      }
+
+      if (!window.FB) {
+        return;
+      }
+
+      if (window.FB._initialized) {
+        dispatchReady();
+        return;
+      }
+
+      window.FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v21.0',
       });
 
-      window?.FB?.AppEvents?.logPageView?.();   
-    };  
+      window.FB?.AppEvents?.logPageView?.();
+      dispatchReady();
+    };
 
+    window.fbAsyncInit = initializeFacebookSdk;
+
+    initializeFacebookSdk();
   }, [])
 
 
@@ -57,7 +75,11 @@ export default function App({ Component, ...props }: AppProps) {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <Script id="facebook-sdk" src="https://connect.facebook.net/en_US/sdk.js" />
+        <Script
+          id="facebook-sdk"
+          src="https://connect.facebook.net/en_US/sdk.js"
+          strategy="afterInteractive"
+        />
           <Component {...pageProps} /> 
         <ToastContainer autoClose={5000} hideProgressBar={true} position="top-right" />
       </PersistGate>
