@@ -18,6 +18,25 @@ frontend:
         - printf "NEXT_PUBLIC_FIREBASE_APP_ID=%s\n" "$NEXT_PUBLIC_FIREBASE_APP_ID" >> .env.production
         - printf "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=%s\n" "$NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME" >> .env.production
         - printf "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=%s\n" "$NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET" >> .env.production
+        - printf "NEXT_PUBLIC_FB_APP_ID=%s\n" "$NEXT_PUBLIC_FB_APP_ID" >> .env.production
+        - printf "NEXT_PUBLIC_FB_CONFIG_ID=%s\n" "$NEXT_PUBLIC_FB_CONFIG_ID" >> .env.production
+        - printf "FB_CLIENT_SECRET=%s\n" "$FB_CLIENT_SECRET" >> .env.production
+        - printf "BUSINESS_ID=%s\n" "$BUSINESS_ID" >> .env.production
+        - printf "BUSINESS_ACCESS_TOKEN=%s\n" "$BUSINESS_ACCESS_TOKEN" >> .env.production
+        - printf "BUSINESS_PHONE_ID=%s\n" "$BUSINESS_PHONE_ID" >> .env.production
+        - printf "WHATSAPP_PIN=%s\n" "$WHATSAPP_PIN" >> .env.production
+        - printf "DOMAIN=%s\n" "$DOMAIN" >> .env.production
+        - printf "HOST=%s\n" "$HOST" >> .env.production
+        - printf "FIREBASE_ADMIN_PRIVATE_KEY=%s\n" "$FIREBASE_ADMIN_PRIVATE_KEY" >> .env.production
+        - printf "FIREBASE_ADMIN_CLIENT_EMAIL=%s\n" "$FIREBASE_ADMIN_CLIENT_EMAIL" >> .env.production
+        - printf "WHATSAPP_WEBHOOK_TOKEN=%s\n" "$WHATSAPP_WEBHOOK_TOKEN" >> .env.production
+        - printf "FACEBOOK_AD_ACCOUNT_ID=%s\n" "$FACEBOOK_AD_ACCOUNT_ID" >> .env.production
+        - printf "FACEBOOK_PAGE_ID=%s\n" "$FACEBOOK_PAGE_ID" >> .env.production
+        - printf "WEBSITE_URL=%s\n" "$WEBSITE_URL" >> .env.production
+        - printf "INSTAGRAM_ACCOUNT_ID=%s\n" "$INSTAGRAM_ACCOUNT_ID" >> .env.production
+        - printf "GEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" >> .env.production
+        - printf "CLOUDINARY_URL=%s\n" "$CLOUDINARY_URL" >> .env.production
+        - printf "CLOUDINARY_API_KEY=%s\n" "$CLOUDINARY_API_KEY" >> .env.production
         - echo "Generating Prisma Client..."
         - npx prisma generate
     build:
