@@ -130,9 +130,14 @@ export default withIronSessionApiRoute(
         }
       });
             
-    } catch (e) {
-      console.log(e)
-      return new ServerError(res,  500, "Internal server error")
+    } catch (e: any) {
+      const errorDetails = e?.response?.data || e?.message || e;
+      console.error('WABA access-token error:', errorDetails);
+      const message =
+        typeof errorDetails === 'string'
+          ? errorDetails
+          : errorDetails?.error?.message || 'Internal server error';
+      return new ServerError(res,  500, message)
     }
   },
   sessionCookie(),
