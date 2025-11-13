@@ -95,16 +95,33 @@ const DashboardLayout = (props: IProps) => {
     const currentWorkspace = useSelector(getCurrentWorkspace)
     const allWorkspace = useSelector(getAllWorkspace)
 
+    // Initialize workspaces on mount
     useEffect(() => {
-        if (!currentWorkspace || currentWorkspace.id === 0) {
-            const firstWorkspace = (props.user as User).workspaces[0];
-            dispatch(setCurrentWorkspace(firstWorkspace));
+        const userWorkspaces = (props.user as User).workspaces || [];
+        if (userWorkspaces.length > 0) {
+            // Set all workspaces in Redux
+            dispatch(setAllWorkspace(userWorkspaces));
         }
-    }, [currentWorkspace, props.user]);
+    }, [props.user, dispatch]);
 
+    // Set default workspace only on initial mount if none is selected
+    const hasInitializedWorkspace = React.useRef(false);
     useEffect(() => {
-        dispatch(setAllWorkspace((props.user as User).workspaces));
-    }, [props.user]);
+        if (hasInitializedWorkspace.current) return; // Only run once on mount
+        
+        const userWorkspaces = (props.user as User).workspaces || [];
+        // Only set default if no workspace is selected (id is 0 or undefined)
+        if ((!currentWorkspace || currentWorkspace.id === 0) && userWorkspaces.length > 0) {
+            const firstWorkspace = userWorkspaces[0];
+            if (firstWorkspace) {
+                dispatch(setCurrentWorkspace(firstWorkspace));
+                hasInitializedWorkspace.current = true;
+            }
+        } else if (currentWorkspace && currentWorkspace.id > 0) {
+            // Workspace is already set, mark as initialized
+            hasInitializedWorkspace.current = true;
+        }
+    }, [props.user, dispatch, currentWorkspace]);
 
     const handleWorkspaceChange = async (workspace: Workspace) => {
         setIsWorkspaceChanging(true);

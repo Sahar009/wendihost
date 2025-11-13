@@ -1,8 +1,8 @@
 import React, { ReactNode, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useDispatch, useSelector } from 'react-redux';
-import {Pencil,Trash2, GripHorizontal} from "lucide-react"
-import { getEdges, removeNode } from '@/store/slices/chatbotBuilderSlice';
+import {Pencil,Trash2, GripHorizontal, Copy} from "lucide-react"
+import { getEdges, removeNode, duplicateNode } from '@/store/slices/chatbotBuilderSlice';
 
 interface IProps {
     id: string,
@@ -20,6 +20,10 @@ const NodeWrapper = (props: IProps) => {
 
     const deleteNode = () => {
         dispatch(removeNode(id))
+    }
+
+    const handleDuplicate = () => {
+        dispatch(duplicateNode(id))
     }
 
     const onConnect = (params: any) => {
@@ -50,6 +54,7 @@ const NodeWrapper = (props: IProps) => {
                 </div>
                 <div className="flex  gap-4 bg-primary rounded-b-lg py-2 p-2">
                     {onEdit && <button onClick={onEdit}><Pencil size={24} color='white' /></button>}
+                    <button onClick={handleDuplicate} title="Duplicate node"><Copy size={24} color='white' /></button>
                     <button onClick={deleteNode}><Trash2 size={24} color='white' /></button>
                 </div>
             </div>

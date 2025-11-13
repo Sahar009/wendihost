@@ -12,8 +12,8 @@ import { ApiResponse } from '@/libs/types'
 import Contact from '@/components/widgets/contact'
 import ServiceMetrics from '@/components/widgets/metrics';
 import WhatsappLinkWidget from '@/components/widgets/WhatsappLinkWidget';
-import { useSelector } from 'react-redux'
-import { getCurrentWorkspace } from '@/store/slices/system'
+import { useSelector, useDispatch } from 'react-redux'
+import { getCurrentWorkspace, setCurrentWorkspace } from '@/store/slices/system'
 import { useRouter } from 'next/router'
 
 export const getServerSideProps = withIronSessionSsr(async ({ req, res }) => {
@@ -65,6 +65,7 @@ export default function Dashboard(props: IProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [isFacebookReady, setIsFacebookReady] = useState(false);
     const router = useRouter()
+    const dispatch = useDispatch()
     
     // Track component lifecycle
     useEffect(() => {
@@ -265,6 +266,22 @@ export default function Dashboard(props: IProps) {
                 const res: AxiosResponse = await axios.post(`/api/${workspaceId}/waba/access-token`, body)
                 const data: ApiResponse = res?.data
                 toast.success(data.message)
+                
+                // Update workspace in Redux with the new connection data
+                if (data?.data?.workspace) {
+                    dispatch(setCurrentWorkspace(data.data.workspace))
+                } else if (workspace) {
+                    // Fallback: update existing workspace with new phone and access token
+                    dispatch(setCurrentWorkspace({
+                        ...workspace,
+                        phone: data?.data?.phone || workspace.phone,
+                        accessToken: data?.data?.workspace?.accessToken || workspace.accessToken,
+                        phoneId: data?.data?.workspace?.phoneId || workspace.phoneId,
+                        whatsappId: data?.data?.workspace?.whatsappId || workspace.whatsappId,
+                        businessId: data?.data?.workspace?.businessId || workspace.businessId,
+                    }))
+                }
+                
                 setLoggedIn(true)
                 setDispNumber(data?.data?.phone)
                 await fetchDashboardData(true)
@@ -279,7 +296,7 @@ export default function Dashboard(props: IProps) {
         if (accessCode && phoneNumberId && wabaId) {
             authenticateBusiness()
         }
-    }, [accessCode, fetchDashboardData, phoneNumberId, router, wabaId, workspaceId])
+    }, [accessCode, fetchDashboardData, phoneNumberId, router, wabaId, workspaceId, workspace, dispatch])
 
 
     useEffect(() => {
@@ -376,12 +393,6 @@ export default function Dashboard(props: IProps) {
                                         <div className='w-56'>
                                             <LoadingButton onClick={launchWhatsAppSignup} color='green' disabled={!isFacebookReady}>Connect Account</LoadingButton>
                                         </div>
-                                    </div>
-                                    
-                                    {/* Debug info for Facebook config */}
-                                    <div className='mt-2 text-xs text-green-100'>
-                                        <p>App ID: {process.env.NEXT_PUBLIC_FB_APP_ID ? 'Set' : 'Missing'}</p>
-                                        <p>Config ID: {FACEBOOK_CONFIG_ID ? 'Set' : 'Missing'}</p>
                                     </div>
 
                                 </div>

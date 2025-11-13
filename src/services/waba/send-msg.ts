@@ -18,7 +18,16 @@ export const handleTextMsgType = async (workspace: Workspace, phone: string, cha
 
     // Handle CTA button (if present)
     if (chat.cta) {
-        await sendCtaButtonMsg(workspace, phone, chat.message || chat.cta.buttonText, chat.cta)
+        // CTA buttons require a body text - use message if available, otherwise use button text or a default message
+        const bodyText = chat.message || chat.cta.buttonText || 'Click the button below';
+        console.log('📤 CHATBOT: Sending CTA button message:', {
+            phone,
+            bodyText,
+            buttonText: chat.cta.buttonText,
+            url: chat.cta.url,
+            nodeId: chat.nodeId
+        });
+        await sendCtaButtonMsg(workspace, phone, bodyText, chat.cta)
         return
     }
 
@@ -251,8 +260,23 @@ export const sendLocationMsg = async (workspace: Workspace, phone: string, locat
     }
 }
 
-export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, content: string, cta: { buttonText: string; url: string }) => {
+export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, content: string, cta: { buttonText: string; url: string; style?: string }) => {
     try {
+        // Validate required fields
+        if (!cta.buttonText || !cta.url) {
+            console.error('❌ CHATBOT: CTA button missing required fields:', { buttonText: cta.buttonText, url: cta.url });
+            return false;
+        }
+
+        // Ensure content is not empty (WhatsApp requires body text)
+        const bodyText = content?.trim() || cta.buttonText || 'Click the button below';
+        
+        // Validate URL format
+        let url = cta.url.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = `https://${url}`;
+        }
+
         const body = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -261,25 +285,42 @@ export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, cont
             "interactive": {
                 "type": "button",
                 "body": {
-                    "text": content
+                    "text": bodyText
                 },
                 "action": {
                     "buttons": [
                         {
                             "type": "url",
-                            "url": cta.url,
-                            "title": cta.buttonText
+                            "url": url,
+                            "title": cta.buttonText.substring(0, 20) // WhatsApp limits button title to 20 characters
                         }
                     ]
                 }
             }
         }
+
+        console.log('📤 CHATBOT: Sending CTA button request:', {
+            phone,
+            bodyText: bodyText.substring(0, 50),
+            buttonText: cta.buttonText,
+            url: url.substring(0, 50)
+        });
+
         const res = await facebookAuth(workspace.accessToken).post(`${FACEBOOK_BASE_ENDPOINT}/${workspace.phoneId}/messages`, body)
-        console.log('✅ CHATBOT: CTA button sent successfully');
+        console.log('✅ CHATBOT: CTA button sent successfully:', res.data);
         return res.data
     } catch (e: any) {
-        console.error('❌ CHATBOT: Error sending CTA button:', e.response?.data || e.message)
-        return false
+        console.error('❌ CHATBOT: Error sending CTA button:', {
+            error: e.response?.data || e.message,
+            status: e.response?.status,
+            statusText: e.response?.statusText
+        });
+        // Return error details for debugging
+        return { 
+            error: true, 
+            message: e.response?.data?.error?.message || e.message,
+            details: e.response?.data 
+        };
     }
 }
 

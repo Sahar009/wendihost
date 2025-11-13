@@ -212,8 +212,10 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
 
     useEffect(() => {
         if (!setValue) return;
+        // Use state.fileType if available (from file uploads), otherwise use currentOption.fileType
+        const fileType = state.fileType !== 'none' ? state.fileType : currentOption.fileType;
         const next = {
-            fileType: currentOption.fileType,
+            fileType: fileType,
             text: caption.value.toString(),
             link: state.link,
             location: state.location,
@@ -250,7 +252,7 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
             });
             setValue(next);
         }
-    }, [selectedFileType, caption.value, state.link, state.location, state.cta, state.api, state.condition, state.interactive, state.template, setValue, currentOption.fileType]);
+    }, [selectedFileType, caption.value, state.link, state.location, state.cta, state.api, state.condition, state.interactive, state.template, state.fileType, setValue, currentOption.fileType]);
 
     useEffect(() => {
         if (showInteractiveConfig && chatbots.length === 0) {
@@ -274,10 +276,27 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
     }, [value]);
 
     useEffect(() => {
-        if (['image', 'video', 'audio'].includes(selectedFileType)) {
+        // Update fileType based on selected file type
+        if (selectedFileType === 'image') {
             setState(prev => ({
                 ...prev,
-                fileType: selectedFileType as FileTypeValue
+                fileType: 'image' as FileTypeValue
+            }));
+        } else if (selectedFileType === 'video') {
+            setState(prev => ({
+                ...prev,
+                fileType: 'video' as FileTypeValue
+            }));
+        } else if (selectedFileType === 'audio') {
+            setState(prev => ({
+                ...prev,
+                fileType: 'audio' as FileTypeValue
+            }));
+        } else if (['cta', 'api', 'interactive', 'template', 'maps'].includes(selectedFileType)) {
+            // For non-file types, set fileType to 'none'
+            setState(prev => ({
+                ...prev,
+                fileType: 'none' as FileTypeValue
             }));
         }
     }, [selectedFileType]);
@@ -291,8 +310,54 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
     }, [value.text]);
 
     const handleUploadComplete = (data: any) => {
-        const url = data?.data?.[0]?.url || DUMMY_PHOTO;
-        setState(prev => ({ ...prev, link: url }));
+        console.log('ChatBotMsg: Upload complete, received data:', data);
+        // Handle the API response structure: { status, data: [upload objects] }
+        const uploadResponse = data?.data || data;
+        const url = Array.isArray(uploadResponse) 
+            ? uploadResponse[0]?.url 
+            : uploadResponse?.url || uploadResponse?.[0]?.url || DUMMY_PHOTO;
+        
+        console.log('ChatBotMsg: Extracted URL:', url);
+        
+        // Determine file type from the uploaded file
+        const uploadedFile = Array.isArray(uploadResponse) ? uploadResponse[0] : uploadResponse;
+        let detectedFileType: FileTypeValue = state.fileType;
+        
+        if (uploadedFile?.type) {
+            const mimeType = uploadedFile.type.toLowerCase();
+            if (mimeType.startsWith('image/')) {
+                detectedFileType = 'image';
+            } else if (mimeType.startsWith('video/')) {
+                detectedFileType = 'video';
+            } else if (mimeType.startsWith('audio/')) {
+                detectedFileType = 'audio';
+            }
+        } else if (url) {
+            // Fallback: detect from URL extension
+            const urlLower = url.toLowerCase();
+            if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'].some(ext => urlLower.includes(ext))) {
+                detectedFileType = 'image';
+            } else if (['.mp4', '.webm', '.ogg', '.avi', '.mov', '.wmv'].some(ext => urlLower.includes(ext))) {
+                detectedFileType = 'video';
+            } else if (['.mp3', '.wav', '.ogg', '.aac', '.flac'].some(ext => urlLower.includes(ext))) {
+                detectedFileType = 'audio';
+            }
+        }
+        
+        // Update state with the URL and correct file type
+        setState(prev => ({ 
+            ...prev, 
+            link: url,
+            fileType: detectedFileType !== 'none' ? detectedFileType : prev.fileType
+        }));
+        
+        // Update selected file type if needed
+        if (detectedFileType !== 'none' && detectedFileType !== state.fileType) {
+            const fileTypeId = detectedFileType === 'image' ? 'image' : 
+                              detectedFileType === 'video' ? 'video' : 
+                              detectedFileType === 'audio' ? 'audio' : 'file';
+            setSelectedFileType(fileTypeId);
+        }
     };
 
     const handleFileTypeSelect = (fileTypeId: string) => {

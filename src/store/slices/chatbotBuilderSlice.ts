@@ -146,6 +146,61 @@ export const chatbotBuilderSlice = createSlice({
       const id = generateRandomId("node")
       state.edges = [...state.edges, { ...action.payload, id }];
     },
+    duplicateNode: (state, action) => {
+      const nodeIdToDuplicate = action.payload;
+      const nodeToDuplicate = state.nodes.find(node => node.id === nodeIdToDuplicate);
+      
+      if (!nodeToDuplicate) return;
+
+      // Create a deep copy of the node with a new ID
+      const newId = generateRandomId("node");
+      const duplicatedNode = {
+        ...nodeToDuplicate,
+        id: newId,
+        position: {
+          x: (nodeToDuplicate.position?.x || 0) + 50,
+          y: (nodeToDuplicate.position?.y || 0) + 50,
+        },
+        data: {
+          ...nodeToDuplicate.data,
+          children: nodeToDuplicate.data?.children || [],
+        },
+      };
+
+      const nodesToAdd = [duplicatedNode];
+
+      // Handle child nodes for button/option message nodes
+      if (nodeToDuplicate.data?.children && nodeToDuplicate.data.children.length > 0) {
+        const childNodes = state.nodes.filter(node => 
+          nodeToDuplicate.data.children.includes(node.id)
+        );
+
+        const childIdMap: Record<string, string> = {};
+        const duplicatedChildren = childNodes.map(childNode => {
+          const newChildId = generateRandomId("node");
+          childIdMap[childNode.id] = newChildId;
+          
+          return {
+            ...childNode,
+            id: newChildId,
+            parentNode: newId,
+            position: {
+              x: (childNode.position?.x || 0) + 50,
+              y: (childNode.position?.y || 0) + 50,
+            },
+            data: {
+              ...childNode.data,
+            },
+          };
+        });
+
+        // Update the duplicated node's children array with new IDs
+        duplicatedNode.data.children = duplicatedChildren.map(child => child.id);
+        nodesToAdd.push(...duplicatedChildren);
+      }
+
+      state.nodes = [...state.nodes, ...nodesToAdd];
+    },
     // Special reducer for hydrating the state
     // extraReducers: {
     //   [HYDRATE]: (state, action) => {
@@ -158,7 +213,7 @@ export const chatbotBuilderSlice = createSlice({
   },
 });
 
-export const { saveNodes, addNode, saveEdges, updateMessage, removeNode, removeChildrenNode } = chatbotBuilderSlice.actions;
+export const { saveNodes, addNode, saveEdges, updateMessage, removeNode, removeChildrenNode, duplicateNode } = chatbotBuilderSlice.actions;
 export const getNodes = (state: any) => state.chatbotBuilder.nodes;
 export const getEdges = (state: any) => state.chatbotBuilder.edges;
 
