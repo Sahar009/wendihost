@@ -111,10 +111,23 @@ const chatbotFlow = async (conversation: Conversation, message: any, interactive
         // Check timeout but allow trigger processing even if expired
         const isExpired = Number(conversation.chatbotTimeout) < Date.now();
         if (isExpired) {
-            console.log("⚠️ CHATBOT: Timeout expired, but checking for trigger first")
+            console.log("⚠️ CHATBOT: Timeout expired, but checking for trigger or interactive message first")
             
-            // If it's a trigger message, allow it to restart the chatbot
-            if (message && typeof message === 'string') {
+            // If it's an interactive message (button click), allow it to continue the flow
+            // Interactive messages are part of the active conversation, not new triggers
+            if (interactive && message && typeof message === 'object') {
+                console.log("✅ CHATBOT: Interactive message detected on expired chatbot, continuing flow")
+                // Extend the timeout and continue with the flow
+                await prisma.conversation.update({
+                    where: { id: conversation.id },
+                    data: {
+                        chatbotTimeout: chatbotTimeout
+                    }
+                });
+                // Continue with the flow below (don't return false)
+            }
+            // If it's a trigger message (string), allow it to restart the chatbot
+            else if (message && typeof message === 'string') {
                 const messageText = message.toLowerCase().trim();
                 const triggerText = chatbot.trigger?.toLowerCase().trim();
                 
@@ -160,7 +173,7 @@ const chatbotFlow = async (conversation: Conversation, message: any, interactive
                     return false
                 }
             } else {
-                console.log("❌ CHATBOT: No trigger message, chatbot expired")
+                console.log("❌ CHATBOT: No trigger or interactive message, chatbot expired")
                 return false
             }
         }

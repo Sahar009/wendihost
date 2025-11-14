@@ -563,10 +563,10 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
         } else if (messageType === 'interactive') {
           // Handle button replies and other interactive messages
           if (message.interactive?.type === 'button_reply') {
-            messageContent = message.interactive.button_reply.title;
+            messageContent = message.interactive.button_reply?.title || 'Button clicked';
             messageTypeValue = 'text';
           } else if (message.interactive?.type === 'list_reply') {
-            messageContent = message.interactive.list_reply.title;
+            messageContent = message.interactive.list_reply?.title || 'List item selected';
             messageTypeValue = 'text';
           } else {
             messageContent = `Interactive: ${message.interactive?.type || 'Unknown'}`;
@@ -574,6 +574,14 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
           }
         } else {
           messageContent = `[${messageType.toUpperCase()}]`;
+        }
+
+        // Ensure messageContent is always a string
+        if (typeof messageContent !== 'string') {
+          console.warn('⚠️ Message content is not a string, converting:', messageContent);
+          messageContent = typeof messageContent === 'object' 
+            ? JSON.stringify(messageContent) 
+            : String(messageContent || '');
         }
 
         console.log('Message content extracted:', {
