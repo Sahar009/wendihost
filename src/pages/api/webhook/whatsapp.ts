@@ -590,13 +590,18 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
           fileType: fileType
         });
 
+        // Final safety check: ensure messageContent is a string
+        const finalMessageContent = typeof messageContent === 'string' 
+          ? messageContent 
+          : (typeof messageContent === 'object' ? JSON.stringify(messageContent) : String(messageContent || ''));
+
         const messageData: any = {
           phone: phone, 
           type: messageTypeValue,
           fromCustomer: true,
           isBot: false,
           fileType: fileType,
-          message: messageContent,
+          message: finalMessageContent, // Use the final string value
           messageId: messageId,
           status: 'delivered',
           conversation: {
@@ -611,7 +616,12 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
           messageData.templateId = message.template.name;
         }
 
-        console.log('Saving message to database...');
+        console.log('Saving message to database...', {
+          messageType: typeof messageData.message,
+          messagePreview: typeof messageData.message === 'string' ? messageData.message.substring(0, 50) : 'NOT A STRING!',
+          fileType: messageData.fileType
+        });
+        
         await prisma.message.create({
           data: {
             ...messageData,

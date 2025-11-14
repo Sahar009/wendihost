@@ -748,11 +748,30 @@ const handleMsgOption = (message: string, node: ICHATBOT_NODE, bot: any) : strin
 
 const handleInteractiveMsg = (message: IInteractiveMessage, node: ICHATBOT_NODE, bot: any) : string | null => {
 
-    const children = node.children
-
     switch (message?.type) {
         case "button_reply":
-            return fetchOptionNode(message.button_reply.title, children)
+            // The button_reply.id contains the button node ID
+            // Use it directly to find the next node
+            const buttonId = message.button_reply.id;
+            console.log('🔍 CHATBOT: Button clicked, ID:', buttonId);
+            
+            // Check if the button node exists in the bot config
+            const buttonNode = bot[buttonId];
+            if (buttonNode) {
+                console.log('✅ CHATBOT: Found button node:', buttonNode.nodeId);
+                // Return the button node's next node, or the button node itself if no next
+                return buttonNode.next || buttonId;
+            }
+            
+            // Fallback: try to find by title in current node's children (for backward compatibility)
+            const children = node.children;
+            if (children && children.length > 0) {
+                console.log('🔄 CHATBOT: Falling back to title search in children');
+                return fetchOptionNode(message.button_reply.title, children);
+            }
+            
+            console.log('❌ CHATBOT: Button node not found and no children to search');
+            return null;
         default:
             return null
     }
