@@ -620,7 +620,12 @@ const generateMessages = (bot: any, node = "start"): IMessage[] => {
 
     const botNodes = getBotNode(bot, node)
 
-    const filterNodes = botNodes.filter(botNode => botNode.type != CUSTOM_NODE.START_NODE)
+    // Filter out START_NODE and BUTTON_NODE (connector nodes that shouldn't be sent as messages)
+    const filterNodes = botNodes.filter(botNode => 
+        botNode.type != CUSTOM_NODE.START_NODE && 
+        botNode.type != CUSTOM_NODE.BUTTON_NODE &&
+        botNode.type != CUSTOM_NODE.OPTION_NODE
+    )
 
     const messages = filterNodes.map((botNode) => {
 
