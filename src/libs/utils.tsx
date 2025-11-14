@@ -165,13 +165,23 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
             console.log({data})
             console.log({fileType})
 
-            const children = node?.data?.children?.map((child: string, index: number): IChild => {
+            const children = node?.data?.children?.map((child: string, index: number): any => {
                 const workingNode = nodes.filter(node => node.id === child)[0]
                 
                 // Check if workingNode exists to prevent undefined errors
                 if (!workingNode) {
                     console.warn(`Child node with id "${child}" not found for parent node "${id}"`);
-                    return { id: child, message: "" };
+                    return { 
+                        nodeId: child, 
+                        id: child,
+                        message: "",
+                        type: CUSTOM_NODE.BUTTON_NODE,
+                        children: [],
+                        next: null,
+                        needResponse: false,
+                        link: "",
+                        fileType: "none" as ACCEPTED_FILES
+                    };
                 }
                 
                 if (type === CUSTOM_NODE.OPTION_MESSAGE_NODE) {
@@ -179,9 +189,19 @@ export const generateChatbot = (nodes: Node[], edges: Edge[]) => {
                     message += `\n${index+1} ${childMessage}`;
                 }
                 
+                // For button message nodes and option message nodes, return full node structure
+                const childMessage = workingNode.data?.message || "";
+                
                 return { 
-                    id: workingNode.id, 
-                    message: workingNode.data?.message || "" 
+                    nodeId: workingNode.id,
+                    id: workingNode.id, // Keep id for backward compatibility
+                    message: childMessage,
+                    type: workingNode.type,
+                    children: [],
+                    next: null,
+                    needResponse: false,
+                    link: workingNode.data?.link || "",
+                    fileType: (workingNode.data?.fileType || "none") as ACCEPTED_FILES
                 };
             }) || []
             

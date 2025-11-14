@@ -779,7 +779,23 @@ const sendMessages = async (chatHandlers: IChatHandler, messages: IMessage[], in
         }
 
         if (chat.type === CUSTOM_NODE.BUTTON_MESSAGE_NODE) {
-            await sendButtonMsg(workspace, receiverPhoneId, chat.message, chat.children)
+            console.log('📤 CHATBOT: Processing button message node:', {
+                nodeId: chat.nodeId,
+                message: chat.message?.substring(0, 50),
+                childrenCount: chat.children?.length || 0,
+                children: chat.children
+            });
+            
+            // Ensure children is an array
+            const buttonChildren = Array.isArray(chat.children) ? chat.children : [];
+            
+            if (buttonChildren.length === 0) {
+                console.error('❌ CHATBOT: Button message node has no children/buttons');
+                // Fallback: send as text message if no buttons
+                await handleTextMsgType(workspace, receiverPhoneId, chat);
+            } else {
+                await sendButtonMsg(workspace, receiverPhoneId, chat.message, buttonChildren);
+            }
         } else if (chat.type === CUSTOM_NODE.OPTION_MESSAGE_NODE) {
             await handleTextMsgType(workspace, receiverPhoneId, chat)
         } else {

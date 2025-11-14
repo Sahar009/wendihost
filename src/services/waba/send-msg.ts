@@ -201,36 +201,92 @@ export const sendDocumentMsg = async (workspace: Workspace, phone: string, docum
 
 
 export const sendButtonMsg = async (workspace: Workspace, phone: string, content: string, children: any[]) => {
-    console.log("BUTTONS")
-    const buttons = children.map((child) => {
-        return  { 
-            type: "reply",
-            reply: {
-                id: child.nodeId,
-                title: child.message
-            }
-        }
-    })
-    try {
+    console.log('📤 CHATBOT: sendButtonMsg called:', {
+        phone,
+        content: content?.substring(0, 50) || '(empty)',
+        childrenCount: children?.length || 0,
+        children: children
+    });
+
+    // Validate inputs - content can be empty, we'll use a default
+    const bodyText = content?.trim() || 'Please select an option:';
     
+    if (!bodyText) {
+        console.error('❌ CHATBOT: Button message content is empty and no default available');
+        return false;
+    }
+
+    if (!children || children.length === 0) {
+        console.error('❌ CHATBOT: No button children provided');
+        return false;
+    }
+
+    if (children.length > 3) {
+        console.error('❌ CHATBOT: Too many buttons (max 3):', children.length);
+        return false;
+    }
+
+    // Map children to buttons - handle both nodeId and id properties
+    const buttons = children
+        .filter(child => child && (child.nodeId || child.id) && child.message) // Filter out invalid children
+        .map((child, index) => {
+            const nodeId = child.nodeId || child.id || `button-${index}`;
+            const title = child.message?.trim() || '';
+            
+            // WhatsApp limits button title to 20 characters
+            const buttonTitle = title.substring(0, 20);
+            
+            if (!buttonTitle) {
+                console.warn(`⚠️ CHATBOT: Button ${index + 1} has empty title, skipping`);
+                return null;
+            }
+
+            return { 
+                type: "reply",
+                reply: {
+                    id: nodeId,
+                    title: buttonTitle
+                }
+            };
+        })
+        .filter(button => button !== null); // Remove null buttons
+
+    if (buttons.length === 0) {
+        console.error('❌ CHATBOT: No valid buttons after processing');
+        return false;
+    }
+
+    try {
         const body = { 
             messaging_product: "whatsapp", 
             recipient_type: "individual",
             to: phone, 
             type: "interactive", 
-            interactive:  {
+            interactive: {
                 type: "button",
-                body:   {   text: content   },
-                action: {   buttons     }
+                body: { text: bodyText },
+                action: { buttons }
             }
         }
 
-        // console.log({body})
-        // console.log(body.interactive.action.buttons)
+        console.log('📤 CHATBOT: Sending button message:', {
+            phone,
+            bodyText: bodyText.substring(0, 50),
+            originalContent: content?.substring(0, 50) || '(empty)',
+            buttonCount: buttons.length,
+            buttons: buttons.map(b => b!.reply.title)
+        });
+
         const res = await facebookAuth(workspace.accessToken).post(`${FACEBOOK_BASE_ENDPOINT}/${workspace.phoneId}/messages`, body)
+        console.log('✅ CHATBOT: Button message sent successfully:', res.data);
         return res.data
-    } catch (e) {
-        //console.log(e.response.data)
+    } catch (e: any) {
+        console.error('❌ CHATBOT: Error sending button message:', {
+            error: e.response?.data || e.message,
+            status: e.response?.status,
+            statusText: e.response?.statusText,
+            details: e.response?.data
+        });
         return false
     }
 }
