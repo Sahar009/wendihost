@@ -324,8 +324,8 @@ export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, cont
             return false;
         }
 
-        // Ensure content is not empty (WhatsApp requires body text)
-        const bodyText = content?.trim() || cta.buttonText || 'Click the button below';
+        // Ensure content is not empty
+        let bodyText = content?.trim() || '';
         
         // Validate URL format
         let url = cta.url.trim();
@@ -333,40 +333,36 @@ export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, cont
             url = `https://${url}`;
         }
 
+        // WhatsApp interactive messages with type "button" only support reply buttons
+        // URL buttons are only available in template messages
+        // For now, send as a text message with clickable URL
+        // Format: message text + URL on a new line
+        const messageText = bodyText 
+            ? `${bodyText}\n\n${cta.buttonText}: ${url}`
+            : `${cta.buttonText}: ${url}`;
+
         const body = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
             "to": phone,
-            "type": "interactive",
-            "interactive": {
-                "type": "button",
-                "body": {
-                    "text": bodyText
-                },
-                "action": {
-                    "buttons": [
-                        {
-                            "type": "url",
-                            "url": url,
-                            "title": cta.buttonText.substring(0, 20) // WhatsApp limits button title to 20 characters
-                        }
-                    ]
-                }
+            "type": "text",
+            "text": {
+                "body": messageText,
+                "preview_url": true // Enable link preview
             }
         }
 
-        console.log('📤 CHATBOT: Sending CTA button request:', {
+        console.log('📤 CHATBOT: Sending CTA as text message with clickable URL:', {
             phone,
-            bodyText: bodyText.substring(0, 50),
-            buttonText: cta.buttonText,
+            messageText: messageText.substring(0, 100),
             url: url.substring(0, 50)
         });
 
         const res = await facebookAuth(workspace.accessToken).post(`${FACEBOOK_BASE_ENDPOINT}/${workspace.phoneId}/messages`, body)
-        console.log('✅ CHATBOT: CTA button sent successfully:', res.data);
+        console.log('✅ CHATBOT: CTA message sent successfully:', res.data);
         return res.data
     } catch (e: any) {
-        console.error('❌ CHATBOT: Error sending CTA button:', {
+        console.error('❌ CHATBOT: Error sending CTA message:', {
             error: e.response?.data || e.message,
             status: e.response?.status,
             statusText: e.response?.statusText
