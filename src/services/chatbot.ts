@@ -202,11 +202,27 @@ const chatbotFlow = async (conversation: Conversation, message: any, interactive
             console.log('✅ CHATBOT: New node found:', newNode);
             const messages = generateMessages(bot, newNode as string)
 
+            console.log('📋 CHATBOT: Generated messages:', messages.length, messages.map(m => ({
+                nodeId: m.nodeId,
+                type: m.type,
+                hasCTA: !!m.cta,
+                hasMessage: !!m.message
+            })));
+
             const length = messages.length - 1
 
             if (length < 0) {
                 console.log("⚠️ CHATBOT: No messages generated, but continuing flow");
                 return true
+            }
+    
+            // Prevent duplicate sends by checking if we're already at the target node
+            // If the conversation's currentNode is already the last message node, skip sending
+            if (messages.length > 0 && conversation.currentNode === messages[length].nodeId) {
+                console.log('⚠️ CHATBOT: Already at target node, skipping duplicate send');
+                console.log('   Current node:', conversation.currentNode);
+                console.log('   Target node:', messages[length].nodeId);
+                return true;
             }
     
             await sendMessages(chatHandlers, messages, 0, true)

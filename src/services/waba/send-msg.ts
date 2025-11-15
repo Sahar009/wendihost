@@ -18,14 +18,16 @@ export const handleTextMsgType = async (workspace: Workspace, phone: string, cha
 
     // Handle CTA button (if present)
     if (chat.cta) {
-        // CTA buttons require a body text - use message if available, otherwise use button text or a default message
-        const bodyText = chat.message || chat.cta.buttonText || 'Click the button below';
+        // CTA buttons require a body text - use message if available and not empty, otherwise use button text or a default message
+        const messageText = chat.message?.trim() || '';
+        const bodyText = messageText || chat.cta.buttonText || 'Click the link below';
         console.log('📤 CHATBOT: Sending CTA button message:', {
             phone,
             bodyText,
             buttonText: chat.cta.buttonText,
             url: chat.cta.url,
-            nodeId: chat.nodeId
+            nodeId: chat.nodeId,
+            hasMessage: !!messageText
         });
         await sendCtaButtonMsg(workspace, phone, bodyText, chat.cta)
         return
@@ -324,22 +326,26 @@ export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, cont
             return false;
         }
 
-        // Ensure content is not empty
-        let bodyText = content?.trim() || '';
-        
         // Validate URL format
         let url = cta.url.trim();
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = `https://${url}`;
         }
 
-        // WhatsApp interactive messages with type "button" only support reply buttons
-        // URL buttons are only available in template messages
-        // For now, send as a text message with clickable URL
-        // Format: message text + URL on a new line
-        const messageText = bodyText 
-            ? `${bodyText}\n\n${cta.buttonText}: ${url}`
-            : `${cta.buttonText}: ${url}`;
+        // Ensure we have a body text - use content if provided and meaningful, otherwise use button text
+        const contentText = content?.trim() || '';
+        const bodyText = contentText || cta.buttonText || 'Click the link below';
+        
+        // Format message: if bodyText is meaningful (not just button text), use it with URL
+        // Otherwise, just use button text and URL
+        let messageText: string;
+        if (contentText && contentText !== cta.buttonText) {
+            // We have a custom message that's different from button text
+            messageText = `${bodyText}\n\n${url}`;
+        } else {
+            // No custom message, just use button text and URL in a cleaner format
+            messageText = `${cta.buttonText}\n${url}`;
+        }
 
         const body = {
             "messaging_product": "whatsapp",
@@ -354,6 +360,7 @@ export const sendCtaButtonMsg = async (workspace: Workspace, phone: string, cont
 
         console.log('📤 CHATBOT: Sending CTA as text message with clickable URL:', {
             phone,
+            bodyText: bodyText.substring(0, 50),
             messageText: messageText.substring(0, 100),
             url: url.substring(0, 50)
         });
