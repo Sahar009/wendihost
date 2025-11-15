@@ -705,9 +705,6 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
                                 <div className="text-xs text-gray-600 mt-1">
                                     {state.cta.url}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                    Style: {state.cta.style || 'primary'}
-                                </div>
                             </div>
                             <button
                                 type="button"
@@ -1241,8 +1238,7 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
                                         cta: {
                                             ...(prev.cta || {}),
                                             buttonText: e.target.value,
-                                            url: prev.cta?.url || '',
-                                            style: prev.cta?.style || 'primary'
+                                            url: prev.cta?.url || ''
                                         }
                                     }))}
                                 />
@@ -1262,45 +1258,10 @@ const ChatBotMsg = ({ value = {}, setValue = () => {} }: IChatBotMsg) => {
                                         cta: {
                                             ...(prev.cta || {}),
                                             url: e.target.value,
-                                            buttonText: prev.cta?.buttonText || '',
-                                            style: prev.cta?.style || 'primary'
+                                            buttonText: prev.cta?.buttonText || ''
                                         }
                                     }))}
                                 />
-                            </div>
-                            
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Button Style
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[
-                                        { value: 'primary', label: 'Primary', color: 'bg-blue-600 text-white' },
-                                        { value: 'secondary', label: 'Secondary', color: 'bg-gray-600 text-white' },
-                                        { value: 'outline', label: 'Outline', color: 'border border-blue-600 text-blue-600' }
-                                    ].map((style) => (
-                                        <button
-                                            key={style.value}
-                                            type="button"
-                                            onClick={() => setState(prev => ({
-                                                ...prev,
-                                                cta: {
-                                                    ...(prev.cta || {}),
-                                                    style: style.value as 'primary' | 'secondary' | 'outline',
-                                                    buttonText: prev.cta?.buttonText || '',
-                                                    url: prev.cta?.url || ''
-                                                }
-                                            }))}
-                                            className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                                                state.cta?.style === style.value 
-                                                    ? style.color 
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            {style.label}
-                                        </button>
-                                    ))}
-                                </div>
                             </div>
                             
                             <div className="flex justify-end gap-3">

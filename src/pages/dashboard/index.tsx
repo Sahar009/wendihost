@@ -171,6 +171,7 @@ export default function Dashboard(props: IProps) {
             config_id: configId, // configuration ID goes here
             response_type: 'code', // must be set to 'code' for System User access token
             override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default types
+            scope: 'pages_show_list,ads_management,pages_read_engagement', // Add page and ads permissions
             extras: {
                 setup: {},
                 featureType: '',

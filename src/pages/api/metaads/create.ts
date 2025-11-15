@@ -15,6 +15,7 @@ interface CreateMetaAdRequest extends NextApiRequest {
     objective: string;
     targetAudience: string;
     budget: number | string;
+    budgetType?: 'daily' | 'monthly';
     startDate: string;
     endDate: string;
     mediaUrl?: string;
@@ -62,6 +63,34 @@ interface AdCreationResult {
   error?: string;
 }
 
+// Parse target audience string to extract country codes
+const parseTargetAudience = (targetAudience: string): string[] => {
+  if (!targetAudience || !targetAudience.trim()) {
+    return ['NG']; 
+  }
+  
+  // Split by comma and clean up
+  const countries = targetAudience
+    .split(',')
+    .map(code => code.trim().toUpperCase())
+    .filter(code => code.length === 2); // Only valid 2-letter codes
+  
+  return countries.length > 0 ? countries : ['US'];
+};
+
+// Convert NGN to USD cents (approximate rate: 1 USD = 1500 NGN)
+// This is a rough conversion - in production, use a real-time exchange rate API
+const convertBudgetToUSDCents = (budgetNGN: number, budgetType: 'daily' | 'monthly' = 'daily'): number => {
+  const USD_TO_NGN = 1500; // Approximate exchange rate
+  const budgetUSD = budgetNGN / USD_TO_NGN;
+  
+  // Facebook API expects budget in cents
+  // If monthly, divide by 30 to get daily budget
+  const dailyBudgetUSD = budgetType === 'monthly' ? budgetUSD / 30 : budgetUSD;
+  
+  return Math.floor(dailyBudgetUSD * 100); // Convert to cents
+};
+
 const createFacebookAd = async (params: CreateMetaAdRequest['body'], accessToken: string, adAccountId: string): Promise<AdCreationResult> => {
   try {
     if (!params.pageId || !params.websiteUrl) {
@@ -71,17 +100,34 @@ const createFacebookAd = async (params: CreateMetaAdRequest['body'], accessToken
     initFacebookAPI(accessToken);
     const adAccount = new AdAccount(adAccountId);
     
+    // Parse dates for scheduling
+    const startTime = params.startDate ? new Date(params.startDate).getTime() / 1000 : undefined;
+    const endTime = params.endDate ? new Date(params.endDate).getTime() / 1000 : undefined;
+    
+    // Determine ad set status based on dates
+    const now = Math.floor(Date.now() / 1000);
+    let adSetStatus = 'PAUSED';
+    if (startTime && startTime <= now && (!endTime || endTime > now)) {
+      adSetStatus = 'ACTIVE';
+    }
+    
     // Create campaign
     const campaign = await adAccount.createCampaign([
       {
         name: `${params.adName} Campaign`,
         objective: OBJECTIVE_MAP[params.objective as keyof typeof OBJECTIVE_MAP] || 'LINK_CLICKS',
-        status: 'PAUSED',
+        status: 'PAUSED', // Campaign stays paused, ad set controls active status
         special_ad_categories: [],
       },
     ]);
 
     const campaignId = (campaign as any)._data.id;
+
+    // Parse target audience to get country codes
+    const countries = parseTargetAudience(params.targetAudience);
+    
+    // Convert budget to USD cents
+    const dailyBudgetCents = convertBudgetToUSDCents(Number(params.budget), params.budgetType || 'daily');
 
     interface FacebookApiResponse<T> {
       _data: T;
@@ -92,28 +138,29 @@ const createFacebookAd = async (params: CreateMetaAdRequest['body'], accessToken
       id: string;
     }
 
-    const adSet = await adAccount.createAdSet([
-      {
-        name: `${params.adName} AdSet`,
-        campaign_id: campaignId,
-        status: 'PAUSED',
-        optimization_goal: 'REACH',
-        billing_event: 'IMPRESSIONS',
-        bid_amount: Math.floor(Number(params.budget) * 100),
-        daily_budget: Math.floor((Number(params.budget) / 30) * 100),
-        targeting: {
-          geo_locations: {
-            countries: ['US'],
-          },
-          interests: [
-            {
-              id: '6003139266461',
-              name: 'Parenting'
-            }
-          ]
+    const adSetData: any = {
+      name: `${params.adName} AdSet`,
+      campaign_id: campaignId,
+      status: adSetStatus,
+      optimization_goal: 'REACH',
+      billing_event: 'IMPRESSIONS',
+      daily_budget: dailyBudgetCents,
+      targeting: {
+        geo_locations: {
+          countries: countries,
         },
       },
-    ]) as unknown as FacebookApiResponse<AdSetResponse>;
+    };
+
+    // Add scheduling if dates are provided
+    if (startTime) {
+      adSetData.start_time = startTime;
+    }
+    if (endTime) {
+      adSetData.end_time = endTime;
+    }
+
+    const adSet = await adAccount.createAdSet([adSetData]) as unknown as FacebookApiResponse<AdSetResponse>;
 
     const adSetId = adSet._data?.id || adSet.id;
 
@@ -176,58 +223,85 @@ const createWhatsAppAd = async (params: CreateMetaAdRequest['body'], accessToken
     if (!params.phoneNumber) {
       throw new Error('Phone number is required for WhatsApp ads');
     }
+    
+    if (!params.pageId) {
+      throw new Error('Page ID is required for WhatsApp ads');
+    }
 
     initFacebookAPI(accessToken);
     const adAccount = new AdAccount(adAccountId);
+
+    // Parse dates for scheduling
+    const startTime = params.startDate ? new Date(params.startDate).getTime() / 1000 : undefined;
+    const endTime = params.endDate ? new Date(params.endDate).getTime() / 1000 : undefined;
+    
+    // Determine ad set status based on dates
+    const now = Math.floor(Date.now() / 1000);
+    let adSetStatus = 'PAUSED';
+    if (startTime && startTime <= now && (!endTime || endTime > now)) {
+      adSetStatus = 'ACTIVE';
+    }
 
     // Create campaign
     const campaign = await adAccount.createCampaign([
       {
         name: `${params.adName} - WhatsApp`,
         objective: 'MESSAGES',
-        status: 'PAUSED',
+        status: 'PAUSED', // Campaign stays paused, ad set controls active status
         special_ad_categories: [],
       },
     ]) as unknown as Campaign;
 
     const campaignId = (campaign as any)._data.id;
 
+    // Parse target audience to get country codes
+    const countries = parseTargetAudience(params.targetAudience);
+    
+    // Convert budget to USD cents
+    const dailyBudgetCents = convertBudgetToUSDCents(Number(params.budget), params.budgetType || 'daily');
+
     // Create ad set
-    const adSet = await adAccount.createAdSet([
-      {
-        name: `${params.adName} - WhatsApp AdSet`,
-        campaign_id: campaignId,
-        status: 'PAUSED',
-        optimization_goal: 'REPLIES',
-        billing_event: 'IMPRESSIONS',
-        bid_amount: Math.floor(Number(params.budget) * 100),
-        daily_budget: Math.floor((Number(params.budget) / 30) * 100),
-        targeting: {
-          geo_locations: {
-            countries: ['US'],
-          },
+    const adSetData: any = {
+      name: `${params.adName} - WhatsApp AdSet`,
+      campaign_id: campaignId,
+      status: adSetStatus,
+      optimization_goal: 'REPLIES',
+      billing_event: 'IMPRESSIONS',
+      daily_budget: dailyBudgetCents,
+      targeting: {
+        geo_locations: {
+          countries: countries,
         },
       },
-    ]) as unknown as AdSet;
+    };
+
+    // Add scheduling if dates are provided
+    if (startTime) {
+      adSetData.start_time = startTime;
+    }
+    if (endTime) {
+      adSetData.end_time = endTime;
+    }
+
+    const adSet = await adAccount.createAdSet([adSetData]) as unknown as AdSet;
 
     const adSetId = (adSet as any)._data.id;
 
-    // Create creative for WhatsApp
+    // Create creative for WhatsApp using adText
+    // Note: WhatsApp ads require templates, but we can use a text message format
+    // For production, you should create and use approved WhatsApp templates
     const creative = await adAccount.createAdCreative([
       {
         name: `${params.adName} - WhatsApp Creative`,
         object_story_spec: {
           page_id: params.pageId,
           instagram_actor_id: params.pageId,
-          whatsapp_message_data: {
-            type: 'MESSAGE_TEMPLATE',
-            template: {
-              name: 'hello_world',
-              language: {
-                code: 'en_US',
-              },
+          link_data: {
+            link: `https://wa.me/${params.phoneNumber.replace(/\D/g, '')}?text=${encodeURIComponent(params.adText || 'Hello')}`,
+            message: params.adText || 'Click to send a WhatsApp message',
+            call_to_action: {
+              type: 'SEND_MESSAGE',
             },
-            to: params.phoneNumber,
           },
         },
       },
@@ -315,8 +389,13 @@ export default withIronSessionApiRoute(
         return new ServerError(res, 400, 'pageId is required for Facebook ads');
       }
 
-      if (req.body.adType === 'whatsapp' && !req.body.phoneNumber) {
-        return new ServerError(res, 400, 'phoneNumber is required for WhatsApp ads');
+      if (req.body.adType === 'whatsapp') {
+        if (!req.body.phoneNumber) {
+          return new ServerError(res, 400, 'phoneNumber is required for WhatsApp ads');
+        }
+        if (!req.body.pageId) {
+          return new ServerError(res, 400, 'pageId is required for WhatsApp ads');
+        }
       }
 
       if (!workspace.accessToken || !workspace.fbUserId) {

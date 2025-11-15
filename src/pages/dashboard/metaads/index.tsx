@@ -56,6 +56,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
   const [objective, setObjective] = useState(adObjectives[0]);
   const [targetAudience, setTargetAudience] = useState('');
   const [budget, setBudget] = useState('');
+  const [budgetType, setBudgetType] = useState<'daily' | 'monthly'>('daily');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [media, setMedia] = useState<File | null>(null);
@@ -166,6 +167,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
         objective,
         targetAudience,
         budget: parseFloat(budget),
+        budgetType,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
         mediaUrl: mediaUrl || '',
@@ -198,6 +200,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
       setObjective(adObjectives[0]);
       setTargetAudience('');
       setBudget('');
+      setBudgetType('daily');
       setStartDate('');
       setEndDate('');
       setMediaUrl(null);
@@ -213,7 +216,7 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
     } finally {
       setIsLoading(false);
     }
-  }, [adName, color, objective, targetAudience, budget, startDate, endDate, mediaUrl, adText, cta, adType, phoneNumber, pageId, websiteUrl, workspaceId]);
+  }, [adName, color, objective, targetAudience, budget, budgetType, startDate, endDate, mediaUrl, adText, cta, adType, phoneNumber, pageId, websiteUrl, workspaceId]);
   
   return (
     <DashboardLayout user={user}>
@@ -263,6 +266,8 @@ const [tab, setTab] = useState<'manager' | 'setup' | 'create'>('manager');
               setTargetAudience={setTargetAudience}
               budget={budget}
               setBudget={setBudget}
+              budgetType={budgetType}
+              setBudgetType={setBudgetType}
               startDate={startDate}
               setStartDate={setStartDate}
               endDate={endDate}
