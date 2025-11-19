@@ -245,7 +245,7 @@ export const sendButtonMsg = async (workspace: Workspace, phone: string, content
 
             return { 
                 type: "reply",
-                reply: {
+            reply: {
                     id: nodeId,
                     title: buttonTitle
                 }
@@ -256,7 +256,7 @@ export const sendButtonMsg = async (workspace: Workspace, phone: string, content
     if (buttons.length === 0) {
         console.error('❌ CHATBOT: No valid buttons after processing');
         return false;
-    }
+            }
 
     try {
         const body = { 

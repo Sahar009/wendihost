@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { getCurrentWorkspace } from '@/store/slices/system';
+import { useSelector, useDispatch } from 'react-redux';
+import { getCurrentWorkspace, setCurrentWorkspace } from '@/store/slices/system';
 import LoadingButton from '@/components/utils/LoadingButton';
 import { FACEBOOK_CONFIG_ID } from '@/libs/constants';
 import axios from 'axios';
@@ -13,6 +13,7 @@ export default function MetaAdsSetup() {
   const [pageInfo, setPageInfo] = useState<any>(null);
 
   const currentWorkspace = useSelector(getCurrentWorkspace);
+  const dispatch = useDispatch();
 
   const fbLoginCallback = (response: any) => {
     if (response.authResponse) {
@@ -43,9 +44,46 @@ export default function MetaAdsSetup() {
       });
 
       if (response.data.status === 'success') {
-        toast.success('Facebook account connected successfully for Meta Ads!');
-        // Refresh the page or update workspace state to reflect changes
-        window.location.reload();
+        console.log('✅ Connection response:', {
+          workspace: response.data.data?.workspace,
+          fbUserId: response.data.data?.fbUserId,
+          facebookPageId: response.data.data?.facebookPageId
+        });
+        
+        // Update workspace in Redux with the new connection data
+        if (response.data.data?.workspace) {
+          console.log('📦 Updating Redux with workspace:', response.data.data.workspace);
+          dispatch(setCurrentWorkspace(response.data.data.workspace));
+          
+          // Check if we got the required data
+          const hasFbUserId = !!response.data.data.workspace.fbUserId;
+          const hasFacebookPageId = !!response.data.data.workspace.facebookPageId;
+          
+          if (hasFbUserId && hasFacebookPageId) {
+            toast.success('Facebook account connected successfully for Meta Ads!');
+          } else {
+            toast.warning('Connected, but some data may be missing. Check console for details.');
+            console.warn('⚠️ Missing data:', {
+              hasFbUserId,
+              hasFacebookPageId,
+              workspace: response.data.data.workspace
+            });
+          }
+        } else {
+          // Fallback: fetch the updated workspace from the API
+          console.log('🔄 Fetching workspace from API...');
+          try {
+            const workspaceRes = await axios.get(`/api/${currentWorkspace.id}/workspace`);
+            if (workspaceRes.data.status === 'success' && workspaceRes.data.data) {
+              console.log('📦 Updating Redux with fetched workspace:', workspaceRes.data.data);
+              dispatch(setCurrentWorkspace(workspaceRes.data.data));
+              toast.success('Facebook account connected successfully for Meta Ads!');
+            }
+          } catch (fetchError) {
+            console.error('❌ Error fetching updated workspace:', fetchError);
+            toast.error('Connected but failed to refresh. Please reload the page.');
+          }
+        }
       }
     } catch (error: any) {
       console.error('Error connecting Facebook:', error);

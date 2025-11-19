@@ -31,6 +31,9 @@ export default withIronSessionApiRoute(
       // Exchange code for access token
       // For client-side OAuth, the redirect_uri should match what was used in FB.login
       // Since we're using config_id, we don't need redirect_uri
+      console.log('🔄 Exchanging code for access token...');
+      console.log('Code length:', code?.length);
+      
       const tokenResponse = await axios.post(
         `${FACEBOOK_BASE_ENDPOINT}oauth/access_token`,
         {
@@ -42,11 +45,20 @@ export default withIronSessionApiRoute(
         { headers: { 'Content-Type': 'application/json' } }
       );
 
+      console.log('✅ Token response received:', {
+        hasAccessToken: !!tokenResponse.data.access_token,
+        hasExpiresIn: !!tokenResponse.data.expires_in,
+        tokenType: tokenResponse.data.token_type
+      });
+
       const accessToken = tokenResponse.data.access_token;
 
       if (!accessToken) {
+        console.error('❌ No access token in response:', tokenResponse.data);
         return new ServerError(res, 400, 'Failed to get access token from Facebook');
       }
+
+      console.log('✅ Access token obtained (length:', accessToken.length + ')');
 
       // Get Facebook user ID and token info
       let fbUserId: number | null = null;
@@ -61,16 +73,29 @@ export default withIronSessionApiRoute(
           }
         });
         tokenInfo = debugRes.data.data;
-        fbUserId = parseInt(tokenInfo.user_id);
-        console.log('Facebook User ID for Meta Ads:', fbUserId);
+        console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2));
+        
+        if (tokenInfo.user_id) {
+          fbUserId = parseInt(tokenInfo.user_id);
+          console.log('✅ Facebook User ID for Meta Ads:', fbUserId);
+        } else {
+          console.warn('⚠️ No user_id in token debug response');
+        }
+        
         console.log('Token scopes:', tokenInfo.scopes);
-      } catch (debugError) {
-        console.error('Error fetching Facebook User ID:', debugError);
+        console.log('Token type:', tokenInfo.type);
+      } catch (debugError: any) {
+        console.error('❌ Error fetching Facebook User ID:', {
+          message: debugError.response?.data?.error?.message || debugError.message,
+          code: debugError.response?.data?.error?.code
+        });
       }
 
       // Fetch Facebook pages
       try {
         const userId = fbUserId ? String(fbUserId) : 'me';
+        console.log(`🔍 Fetching pages for userId: ${userId}`);
+        
         const pagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${userId}/accounts`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -83,16 +108,20 @@ export default withIronSessionApiRoute(
         });
 
         const pages = pagesResponse.data.data || [];
-        console.log(`Found ${pages.length} pages for Meta Ads`);
+        console.log(`✅ Found ${pages.length} pages for Meta Ads`);
+        if (pages.length > 0) {
+          console.log('Pages:', pages.map((p: any) => ({ id: p.id, name: p.name })));
+        }
 
         if (pages.length > 0) {
           // Use the first page ID
           facebookPageId = pages[0].id;
-          console.log('Facebook Page ID for Meta Ads:', facebookPageId);
+          console.log('✅ Facebook Page ID for Meta Ads:', facebookPageId);
         }
 
         // If no pages found with userId, try 'me' as fallback
         if (pages.length === 0 && userId !== 'me') {
+          console.log('⚠️ No pages found with userId, trying "me" endpoint...');
           try {
             const meResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me/accounts`, {
               headers: {
@@ -105,18 +134,25 @@ export default withIronSessionApiRoute(
               }
             });
             const mePages = meResponse.data.data || [];
+            console.log(`✅ Found ${mePages.length} pages from "me" endpoint`);
             if (mePages.length > 0) {
               facebookPageId = mePages[0].id;
-              console.log('Facebook Page ID (from me endpoint):', facebookPageId);
+              console.log('✅ Facebook Page ID (from me endpoint):', facebookPageId);
             }
           } catch (meError: any) {
-            console.warn('Error fetching pages from "me" endpoint:', meError.response?.data?.error?.message);
+            console.warn('❌ Error fetching pages from "me" endpoint:', {
+              message: meError.response?.data?.error?.message || meError.message,
+              code: meError.response?.data?.error?.code,
+              type: meError.response?.data?.error?.type
+            });
           }
         }
       } catch (pagesError: any) {
-        console.warn('Error fetching Facebook pages:', {
+        console.error('❌ Error fetching Facebook pages:', {
           message: pagesError.response?.data?.error?.message || pagesError.message,
-          code: pagesError.response?.data?.error?.code
+          code: pagesError.response?.data?.error?.code,
+          type: pagesError.response?.data?.error?.type,
+          fullError: pagesError.response?.data
         });
         // Continue without facebookPageId - user can select manually
       }
@@ -124,26 +160,63 @@ export default withIronSessionApiRoute(
       // Update workspace with Facebook Meta Ads connection
       // Note: We're storing this separately or updating the existing accessToken
       // For now, we'll update the workspace with Meta Ads specific fields
+      console.log('💾 Saving to database:', {
+        fbUserId,
+        facebookPageId,
+        hasAccessToken: !!accessToken
+      });
+
+      const updateData: any = {};
+      
+      // Only update if we have values (don't set to null/undefined)
+      if (fbUserId) {
+        updateData.fbUserId = fbUserId;
+      }
+      if (facebookPageId) {
+        updateData.facebookPageId = facebookPageId;
+      }
+      
+      // Save the access token for Meta Ads (it has the right permissions)
+      // This will overwrite the existing accessToken, but that's okay since this one has Meta Ads permissions
+      if (accessToken) {
+        updateData.accessToken = accessToken;
+      }
+
+      console.log('📝 Update data:', updateData);
+
       const updatedWorkspace = await prisma.workspace.update({
         where: {
           id: Number(workspaceId)
         },
-        data: {
-          fbUserId: fbUserId || undefined,
-          facebookPageId: facebookPageId || undefined,
-          // Optionally store a separate Meta Ads access token
-          // For now, we'll use the same accessToken if it has the right permissions
-          // Or you could add a new field like metaAdsAccessToken
-        }
+        data: updateData
       });
+
+      console.log('✅ Workspace updated:', {
+        id: updatedWorkspace.id,
+        fbUserId: updatedWorkspace.fbUserId,
+        facebookPageId: updatedWorkspace.facebookPageId,
+        hasAccessToken: !!updatedWorkspace.accessToken
+      });
+
+      // Warn if critical data is missing
+      if (!fbUserId || !facebookPageId) {
+        console.warn('⚠️ Connection completed but missing data:', {
+          hasFbUserId: !!fbUserId,
+          hasFacebookPageId: !!facebookPageId
+        });
+      }
 
       return res.status(200).json({
         status: 'success',
         statusCode: 200,
-        message: 'Facebook connected successfully for Meta Ads',
+        message: fbUserId && facebookPageId 
+          ? 'Facebook connected successfully for Meta Ads'
+          : 'Facebook connected, but some data may be missing. Please check server logs.',
         data: {
           workspace: updatedWorkspace,
-          pagesCount: facebookPageId ? 1 : 0
+          pagesCount: facebookPageId ? 1 : 0,
+          fbUserId,
+          facebookPageId
         }
       });
 

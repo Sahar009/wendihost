@@ -151,7 +151,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
       setPageId(workspace.facebookPageId);
     }
   }, [workspace?.facebookPageId, pageId, availablePages.length, setPageId]);
-  
+
   // Update objectives and CTAs based on ad type
   const currentObjectives = adObjectives[adType];
   const currentCTAs = callToActions[adType];
@@ -191,7 +191,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 mr-2"
                 />
                 <span className="text-sm font-medium capitalize">{type}</span>
-              </label>
+                </label>
             ))}
           </div>
         </div>
@@ -205,7 +205,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Ad Name <span className="text-red-500">*</span>
-              </label>
+            </label>
               <input 
                 type="text" 
                 name="adName" 
@@ -219,7 +219,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Preview Color (UI Only)
-              </label>
+            </label>
               <div className="flex items-center gap-3">
                 <input 
                   type="color" 
@@ -448,10 +448,10 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                     </p>
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+              <div>
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
                     WhatsApp Business Number <span className="text-red-500">*</span>
-                  </label>
+                </label>
                 <div className="mt-1">
                   <input
                     type="tel"
@@ -502,16 +502,16 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                         ))}
                       </select>
                     ) : (
-                      <input
-                        type="text"
-                        id="pageId"
-                        name="pageId"
+                    <input
+                      type="text"
+                      id="pageId"
+                      name="pageId"
                         className="shadow-sm focus:ring-2 focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-lg px-4 py-2.5"
-                        value={pageId}
-                        onChange={(e) => setPageId(e.target.value)}
-                        placeholder="e.g., 123456789012345"
-                        required={adType === 'facebook'}
-                      />
+                      value={pageId}
+                      onChange={(e) => setPageId(e.target.value)}
+                      placeholder="e.g., 123456789012345"
+                      required={adType === 'facebook'}
+                    />
                     )}
                     <p className="mt-1.5 text-xs text-gray-500">
                       {availablePages.length > 0 
@@ -593,7 +593,7 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
       </form>
       {/* Preview & Billing Info */}
       <div className="flex-1 max-w-md mt-10 md:mt-0 space-y-6">
-        {/* Preview */}
+      {/* Preview */}
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
           <h3 className="font-semibold text-lg text-gray-900 mb-4 flex items-center gap-2">
             <span className="w-1 h-6 bg-primary rounded-full"></span>
