@@ -65,38 +65,68 @@ export default withIronSessionApiRoute(
       let facebookPageId: string | null = null;
       let tokenInfo = null;
 
+      // Try to get user ID from /me endpoint first (simpler and more reliable)
       try {
-        const debugRes = await axios.get(`${FACEBOOK_BASE_ENDPOINT}debug_token`, {
+        console.log('🔍 Fetching user info from /me endpoint...');
+        const meResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
           params: {
-            input_token: accessToken,
-            access_token: accessToken
+            fields: 'id'
           }
         });
-        tokenInfo = debugRes.data.data;
-        console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2));
         
-        if (tokenInfo.user_id) {
-          fbUserId = parseInt(tokenInfo.user_id);
-          console.log('✅ Facebook User ID for Meta Ads:', fbUserId);
-        } else {
-          console.warn('⚠️ No user_id in token debug response');
+        if (meResponse.data.id) {
+          fbUserId = parseInt(meResponse.data.id);
+          console.log('✅ Facebook User ID from /me endpoint:', fbUserId);
         }
-        
-        console.log('Token scopes:', tokenInfo.scopes);
-        console.log('Token type:', tokenInfo.type);
-      } catch (debugError: any) {
-        console.error('❌ Error fetching Facebook User ID:', {
-          message: debugError.response?.data?.error?.message || debugError.message,
-          code: debugError.response?.data?.error?.code
+      } catch (meError: any) {
+        console.warn('⚠️ Could not get user ID from /me endpoint:', {
+          message: meError.response?.data?.error?.message || meError.message,
+          code: meError.response?.data?.error?.code
         });
       }
 
+      // Also try debug_token with app access token (more reliable)
+      if (!fbUserId) {
+        try {
+          console.log('🔍 Trying debug_token with app access token...');
+          // App access token format: app_id|app_secret
+          const appAccessToken = `${FACEBOOK_APP_ID}|${FACEBOOK_CLIENT_SECRET}`;
+          
+          const debugRes = await axios.get(`${FACEBOOK_BASE_ENDPOINT}debug_token`, {
+            params: {
+              input_token: accessToken,
+              access_token: appAccessToken
+            }
+          });
+          tokenInfo = debugRes.data.data;
+          console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2));
+          
+          if (tokenInfo.user_id) {
+            fbUserId = parseInt(tokenInfo.user_id);
+            console.log('✅ Facebook User ID from debug_token:', fbUserId);
+          } else {
+            console.warn('⚠️ No user_id in token debug response');
+          }
+          
+          console.log('Token scopes:', tokenInfo.scopes);
+          console.log('Token type:', tokenInfo.type);
+        } catch (debugError: any) {
+          console.error('❌ Error fetching Facebook User ID from debug_token:', {
+            message: debugError.response?.data?.error?.message || debugError.message,
+            code: debugError.response?.data?.error?.code
+          });
+        }
+      }
+
       // Fetch Facebook pages
+      // Try /me/accounts first (most reliable)
       try {
-        const userId = fbUserId ? String(fbUserId) : 'me';
-        console.log(`🔍 Fetching pages for userId: ${userId}`);
-        
-        const pagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${userId}/accounts`, {
+        console.log('🔍 Fetching pages from /me/accounts endpoint...');
+        const mePagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me/accounts`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
@@ -107,23 +137,25 @@ export default withIronSessionApiRoute(
           }
         });
 
-        const pages = pagesResponse.data.data || [];
-        console.log(`✅ Found ${pages.length} pages for Meta Ads`);
-        if (pages.length > 0) {
-          console.log('Pages:', pages.map((p: any) => ({ id: p.id, name: p.name })));
-        }
-
-        if (pages.length > 0) {
-          // Use the first page ID
-          facebookPageId = pages[0].id;
+        const mePages = mePagesResponse.data.data || [];
+        console.log(`✅ Found ${mePages.length} pages from /me/accounts`);
+        if (mePages.length > 0) {
+          console.log('Pages:', mePages.map((p: any) => ({ id: p.id, name: p.name })));
+          facebookPageId = mePages[0].id;
           console.log('✅ Facebook Page ID for Meta Ads:', facebookPageId);
         }
-
-        // If no pages found with userId, try 'me' as fallback
-        if (pages.length === 0 && userId !== 'me') {
-          console.log('⚠️ No pages found with userId, trying "me" endpoint...');
+      } catch (mePagesError: any) {
+        console.warn('⚠️ Error fetching pages from /me/accounts:', {
+          message: mePagesError.response?.data?.error?.message || mePagesError.message,
+          code: mePagesError.response?.data?.error?.code,
+          type: mePagesError.response?.data?.error?.type
+        });
+        
+        // Fallback: try with userId if we have it
+        if (fbUserId && !facebookPageId) {
           try {
-            const meResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me/accounts`, {
+            console.log(`🔍 Trying pages with userId: ${fbUserId}...`);
+            const userIdPagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${fbUserId}/accounts`, {
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
@@ -133,28 +165,21 @@ export default withIronSessionApiRoute(
                 limit: 100
               }
             });
-            const mePages = meResponse.data.data || [];
-            console.log(`✅ Found ${mePages.length} pages from "me" endpoint`);
-            if (mePages.length > 0) {
-              facebookPageId = mePages[0].id;
-              console.log('✅ Facebook Page ID (from me endpoint):', facebookPageId);
+
+            const userIdPages = userIdPagesResponse.data.data || [];
+            console.log(`✅ Found ${userIdPages.length} pages from userId endpoint`);
+            if (userIdPages.length > 0) {
+              facebookPageId = userIdPages[0].id;
+              console.log('✅ Facebook Page ID (from userId endpoint):', facebookPageId);
             }
-          } catch (meError: any) {
-            console.warn('❌ Error fetching pages from "me" endpoint:', {
-              message: meError.response?.data?.error?.message || meError.message,
-              code: meError.response?.data?.error?.code,
-              type: meError.response?.data?.error?.type
+          } catch (userIdPagesError: any) {
+            console.error('❌ Error fetching pages from userId endpoint:', {
+              message: userIdPagesError.response?.data?.error?.message || userIdPagesError.message,
+              code: userIdPagesError.response?.data?.error?.code,
+              type: userIdPagesError.response?.data?.error?.type
             });
           }
         }
-      } catch (pagesError: any) {
-        console.error('❌ Error fetching Facebook pages:', {
-          message: pagesError.response?.data?.error?.message || pagesError.message,
-          code: pagesError.response?.data?.error?.code,
-          type: pagesError.response?.data?.error?.type,
-          fullError: pagesError.response?.data
-        });
-        // Continue without facebookPageId - user can select manually
       }
 
       // Update workspace with Facebook Meta Ads connection
