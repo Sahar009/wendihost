@@ -402,7 +402,8 @@ export default withIronSessionApiRoute(
         return new ServerError(res, 400, 'Please connect your Facebook account first');
       }
 
-      const adAccountId = `act_${workspace.fbUserId}`;
+      // Convert BigInt to string for ad account ID
+      const adAccountId = `act_${String(workspace.fbUserId)}`;
       let result: AdCreationResult;
 
       if (req.body.adType === 'facebook') {

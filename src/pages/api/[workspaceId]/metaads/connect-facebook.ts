@@ -61,7 +61,8 @@ export default withIronSessionApiRoute(
       console.log('✅ Access token obtained (length:', accessToken.length + ')');
 
       // Get Facebook user ID and token info
-      let fbUserId: number | null = null;
+      // Using BigInt for Facebook User IDs as they can be 64-bit integers
+      let fbUserId: bigint | null = null;
       let facebookPageId: string | null = null;
       let tokenInfo = null;
 
@@ -79,8 +80,9 @@ export default withIronSessionApiRoute(
         });
         
         if (meResponse.data.id) {
-          fbUserId = parseInt(meResponse.data.id);
-          console.log('✅ Facebook User ID from /me endpoint:', fbUserId);
+          // Convert to BigInt to handle large Facebook User IDs
+          fbUserId = BigInt(meResponse.data.id);
+          console.log('✅ Facebook User ID from /me endpoint:', fbUserId.toString());
         }
       } catch (meError: any) {
         console.warn('⚠️ Could not get user ID from /me endpoint:', {
@@ -106,8 +108,9 @@ export default withIronSessionApiRoute(
           console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2));
           
           if (tokenInfo.user_id) {
-            fbUserId = parseInt(tokenInfo.user_id);
-            console.log('✅ Facebook User ID from debug_token:', fbUserId);
+            // Convert to BigInt to handle large Facebook User IDs
+            fbUserId = BigInt(tokenInfo.user_id);
+            console.log('✅ Facebook User ID from debug_token:', fbUserId.toString());
           } else {
             console.warn('⚠️ No user_id in token debug response');
           }

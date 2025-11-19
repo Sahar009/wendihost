@@ -94,7 +94,7 @@ model Workspace {
   description        String
   workspaceId        String
   ownerId            Int
-  fbUserId           Int?                @map(name: "fb_user_id")
+  fbUserId           BigInt?             @map(name: "fb_user_id")
   facebookAppId      String?             @map(name: "facebook_app_id")
   facebookConfigId   String?             @map(name: "facebook_config_id")
   facebookPageId     String?             @map(name: "facebook_page_id")

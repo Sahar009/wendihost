@@ -46,13 +46,16 @@ export default withIronSessionApiRoute(
       const access_token = response.data.access_token
 
       // Get Facebook user ID from debug_token for Meta Ads
-      let fbUserId: number | null = null
+      // Using BigInt for Facebook User IDs as they can be 64-bit integers
+      let fbUserId: bigint | null = null
       let facebookPageId: string | null = null
       
       try {
         const debugRes = await axios.get(`https://graph.facebook.com/v21.0/debug_token?input_token=${access_token}&access_token=${access_token}`)
-        fbUserId = parseInt(debugRes.data.data?.user_id)
-        console.log('Facebook User ID:', fbUserId)
+        if (debugRes.data.data?.user_id) {
+          fbUserId = BigInt(debugRes.data.data.user_id)
+          console.log('Facebook User ID:', fbUserId.toString())
+        }
       } catch (debugError) {
         console.error('Error fetching Facebook User ID:', debugError)
         // Continue without fbUserId - it's only needed for Meta Ads

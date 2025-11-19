@@ -50,6 +50,7 @@ export default withIronSessionApiRoute(
         }
 
         // Try using fbUserId if available, otherwise use 'me'
+        // Convert BigInt to string for API calls
         const userId = workspace.fbUserId ? String(workspace.fbUserId) : (tokenInfo?.user_id ? String(tokenInfo.user_id) : 'me');
         const endpoint = `${FACEBOOK_BASE_ENDPOINT}${userId}/accounts`;
         
