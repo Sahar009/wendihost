@@ -47,6 +47,8 @@ export default withIronSessionApiRoute(
 
       // Get Facebook user ID from debug_token for Meta Ads
       let fbUserId: number | null = null
+      let facebookPageId: string | null = null
+      
       try {
         const debugRes = await axios.get(`https://graph.facebook.com/v21.0/debug_token?input_token=${access_token}&access_token=${access_token}`)
         fbUserId = parseInt(debugRes.data.data?.user_id)
@@ -54,6 +56,54 @@ export default withIronSessionApiRoute(
       } catch (debugError) {
         console.error('Error fetching Facebook User ID:', debugError)
         // Continue without fbUserId - it's only needed for Meta Ads
+      }
+
+      // Fetch Facebook pages to get page ID for Meta Ads
+      try {
+        const userId = fbUserId ? String(fbUserId) : 'me'
+        const pagesResponse = await axios.get(`https://graph.facebook.com/v21.0/${userId}/accounts`, {
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            fields: 'id,name,category',
+            limit: 100
+          }
+        })
+
+        const pages = pagesResponse.data.data || []
+        
+        // If no pages found with userId, try 'me' as fallback
+        if (pages.length === 0 && userId !== 'me') {
+          try {
+            const meResponse = await axios.get(`https://graph.facebook.com/v21.0/me/accounts`, {
+              headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+              },
+              params: {
+                fields: 'id,name,category',
+                limit: 100
+              }
+            })
+            const mePages = meResponse.data.data || []
+            if (mePages.length > 0) {
+              // Use the first page ID
+              facebookPageId = mePages[0].id
+              console.log('Facebook Page ID (from me endpoint):', facebookPageId)
+            }
+          } catch (meError) {
+            console.warn('Error fetching pages from "me" endpoint:', meError)
+          }
+        } else if (pages.length > 0) {
+          // Use the first page ID
+          facebookPageId = pages[0].id
+          console.log('Facebook Page ID:', facebookPageId)
+        }
+      } catch (pagesError) {
+        console.warn('Error fetching Facebook pages (non-critical):', pagesError)
+        // Continue without facebookPageId - it's not critical for WhatsApp connection
       }
 
       const phoneInfos = await getWhatsappPhone(access_token, wabaId)
@@ -122,7 +172,8 @@ export default withIronSessionApiRoute(
           accessToken: access_token,
           phone: displayPhoneNumber,
           phoneId: phoneNumberId,
-          fbUserId: fbUserId || undefined
+          fbUserId: fbUserId || undefined,
+          facebookPageId: facebookPageId || undefined
         }
       })
 
