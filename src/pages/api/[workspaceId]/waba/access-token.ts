@@ -59,25 +59,34 @@ export default withIronSessionApiRoute(
       }
 
       // Fetch Facebook pages to get page ID for Meta Ads
+      // Note: WhatsApp Business tokens may not have pages_show_list permission
+      // Pages will be fetched on-demand via the /api/[workspaceId]/metaads/pages endpoint
       try {
-        const userId = fbUserId ? String(fbUserId) : 'me'
-        const pagesResponse = await axios.get(`https://graph.facebook.com/v21.0/${userId}/accounts`, {
-          headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'Content-Type': 'application/json'
-          },
-          params: {
-            fields: 'id,name,category',
-            limit: 100
-          }
-        })
+        // First, check token permissions
+        let tokenInfo = null;
+        try {
+          const debugTokenRes = await axios.get(`https://graph.facebook.com/v21.0/debug_token`, {
+            params: {
+              input_token: access_token,
+              access_token: access_token
+            }
+          });
+          tokenInfo = debugTokenRes.data.data;
+          console.log('Token info for pages:', {
+            scopes: tokenInfo.scopes,
+            type: tokenInfo.type,
+            hasPagesPermission: tokenInfo.scopes?.includes('pages_show_list')
+          });
+        } catch (debugError) {
+          console.warn('Could not debug token for pages:', debugError);
+        }
 
-        const pages = pagesResponse.data.data || []
-        
-        // If no pages found with userId, try 'me' as fallback
-        if (pages.length === 0 && userId !== 'me') {
+        // Only try to fetch pages if token has the right permissions
+        if (tokenInfo?.scopes?.includes('pages_show_list') || tokenInfo?.type !== 'SYSTEM_USER') {
+          const userId = fbUserId ? String(fbUserId) : 'me'
+          
           try {
-            const meResponse = await axios.get(`https://graph.facebook.com/v21.0/me/accounts`, {
+            const pagesResponse = await axios.get(`https://graph.facebook.com/v21.0/${userId}/accounts`, {
               headers: {
                 'Authorization': `Bearer ${access_token}`,
                 'Content-Type': 'application/json'
@@ -87,22 +96,56 @@ export default withIronSessionApiRoute(
                 limit: 100
               }
             })
-            const mePages = meResponse.data.data || []
-            if (mePages.length > 0) {
+
+            const pages = pagesResponse.data.data || []
+            console.log(`Found ${pages.length} pages for userId: ${userId}`)
+            
+            // If no pages found with userId, try 'me' as fallback
+            if (pages.length === 0 && userId !== 'me') {
+              try {
+                const meResponse = await axios.get(`https://graph.facebook.com/v21.0/me/accounts`, {
+                  headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  params: {
+                    fields: 'id,name,category',
+                    limit: 100
+                  }
+                })
+                const mePages = meResponse.data.data || []
+                console.log(`Found ${mePages.length} pages from "me" endpoint`)
+                if (mePages.length > 0) {
+                  // Use the first page ID
+                  facebookPageId = mePages[0].id
+                  console.log('Facebook Page ID (from me endpoint):', facebookPageId)
+                }
+              } catch (meError: any) {
+                console.warn('Error fetching pages from "me" endpoint:', {
+                  message: meError.response?.data?.error?.message || meError.message,
+                  code: meError.response?.data?.error?.code
+                })
+              }
+            } else if (pages.length > 0) {
               // Use the first page ID
-              facebookPageId = mePages[0].id
-              console.log('Facebook Page ID (from me endpoint):', facebookPageId)
+              facebookPageId = pages[0].id
+              console.log('Facebook Page ID:', facebookPageId)
             }
-          } catch (meError) {
-            console.warn('Error fetching pages from "me" endpoint:', meError)
+          } catch (pagesError: any) {
+            console.warn('Error fetching Facebook pages:', {
+              message: pagesError.response?.data?.error?.message || pagesError.message,
+              code: pagesError.response?.data?.error?.code,
+              type: pagesError.response?.data?.error?.type
+            })
+            // Continue without facebookPageId - pages can be fetched later via the pages API
           }
-        } else if (pages.length > 0) {
-          // Use the first page ID
-          facebookPageId = pages[0].id
-          console.log('Facebook Page ID:', facebookPageId)
+        } else {
+          console.log('Token does not have pages_show_list permission. Pages will be fetched on-demand via the pages API.')
         }
-      } catch (pagesError) {
-        console.warn('Error fetching Facebook pages (non-critical):', pagesError)
+      } catch (pagesError: any) {
+        console.warn('Error in pages fetching logic (non-critical):', {
+          message: pagesError.response?.data?.error?.message || pagesError.message
+        })
         // Continue without facebookPageId - it's not critical for WhatsApp connection
       }
 

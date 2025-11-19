@@ -116,12 +116,51 @@ export default withIronSessionApiRoute(
           }
         }
 
+        // If no pages found, try fetching from business account
+        if (pages.length === 0 && workspace.businessId) {
+          console.log('No pages found with user endpoint, trying business account...');
+          try {
+            const businessResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${workspace.businessId}/owned_pages`, {
+              headers: {
+                'Authorization': `Bearer ${workspace.accessToken}`,
+                'Content-Type': 'application/json'
+              },
+              params: {
+                fields: 'id,name,category,access_token',
+                limit: 100
+              }
+            });
+            
+            const businessPages = businessResponse.data.data || [];
+            console.log('Pages from business account:', businessPages.length);
+            
+            if (businessPages.length > 0) {
+              return res.status(200).json({
+                status: 'success',
+                statusCode: 200,
+                message: 'Pages fetched successfully',
+                data: businessPages.map((page: any) => ({
+                  id: page.id,
+                  name: page.name,
+                  category: page.category,
+                  accessToken: page.access_token
+                }))
+              });
+            }
+          } catch (businessError: any) {
+            console.warn('Error fetching pages from business account:', {
+              message: businessError.response?.data?.error?.message || businessError.message,
+              code: businessError.response?.data?.error?.code
+            });
+          }
+        }
+
         // If still no pages and token is a system user token, return helpful message
         if (pages.length === 0 && tokenInfo?.type === 'SYSTEM_USER') {
           return res.status(200).json({
             status: 'success',
             statusCode: 200,
-            message: 'No pages found. The WhatsApp Business access token does not have permission to view pages. Please connect your Facebook account separately for Meta Ads.',
+            message: 'No pages found. The WhatsApp Business access token does not have permission to view pages. Please reconnect your Facebook account with pages_show_list permission, or connect your Facebook account separately for Meta Ads.',
             data: []
           });
         }
