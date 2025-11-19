@@ -47,7 +47,8 @@ export default function MetaAdsSetup() {
         console.log('✅ Connection response:', {
           workspace: response.data.data?.workspace,
           fbUserId: response.data.data?.fbUserId,
-          facebookPageId: response.data.data?.facebookPageId
+          facebookPageId: response.data.data?.facebookPageId,
+          hasPermissionIssue: response.data.data?.hasPermissionIssue
         });
         
         // Update workspace in Redux with the new connection data
@@ -58,11 +59,25 @@ export default function MetaAdsSetup() {
           // Check if we got the required data
           const hasFbUserId = !!response.data.data.workspace.fbUserId;
           const hasFacebookPageId = !!response.data.data.workspace.facebookPageId;
+          const hasPermissionIssue = response.data.data?.hasPermissionIssue;
           
           if (hasFbUserId && hasFacebookPageId) {
             toast.success('Facebook account connected successfully for Meta Ads!');
+          } else if (hasPermissionIssue) {
+            // Show permission error with instructions
+            toast.error(
+              'Permission Required: pages_show_list permission is needed. See instructions below.',
+              { autoClose: 8000 }
+            );
+            // Also show an info toast with instructions
+            setTimeout(() => {
+              toast.info(
+                'To fix: Go to developers.facebook.com/apps → Your App → Permissions → Add pages_show_list',
+                { autoClose: 12000 }
+              );
+            }, 1000);
           } else {
-            toast.warning('Connected, but some data may be missing. Check console for details.');
+            toast.warning(response.data.message || 'Connected, but some data may be missing.');
             console.warn('⚠️ Missing data:', {
               hasFbUserId,
               hasFacebookPageId,
@@ -141,6 +156,26 @@ export default function MetaAdsSetup() {
             {!isMetaAdsConnected && currentWorkspace?.accessToken && (
               <div className="text-amber-600 text-xs mt-1">
                 ⚠️ You have WhatsApp connected, but need to connect Facebook separately for Meta Ads with page permissions
+              </div>
+            )}
+            {!isMetaAdsConnected && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2 text-xs">
+                <div className="font-semibold text-blue-900 mb-1">📋 Required Permissions:</div>
+                <ul className="list-disc list-inside text-blue-800 space-y-1">
+                  <li><code className="bg-blue-100 px-1 rounded">pages_show_list</code> - To list your Facebook pages</li>
+                  <li><code className="bg-blue-100 px-1 rounded">ads_management</code> - To create and manage ads</li>
+                  <li><code className="bg-blue-100 px-1 rounded">pages_read_engagement</code> - To read page engagement data</li>
+                </ul>
+                <div className="mt-2 text-blue-700">
+                  <strong>If you see permission errors:</strong>
+                  <ol className="list-decimal list-inside space-y-1 mt-1">
+                    <li>Go to <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com/apps</a></li>
+                    <li>Select your app → <strong>Permissions</strong> → <strong>Add Permissions</strong></li>
+                    <li>Add <code className="bg-blue-100 px-1 rounded">pages_show_list</code> permission</li>
+                    <li>Submit for review if required (some permissions need Facebook approval)</li>
+                    <li>Try connecting again after permissions are approved</li>
+                  </ol>
+                </div>
               </div>
             )}
           </div>

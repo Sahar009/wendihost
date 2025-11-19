@@ -145,11 +145,29 @@ export default withIronSessionApiRoute(
           console.log('✅ Facebook Page ID for Meta Ads:', facebookPageId);
         }
       } catch (mePagesError: any) {
+        const errorMessage = mePagesError.response?.data?.error?.message || mePagesError.message;
+        const errorCode = mePagesError.response?.data?.error?.code;
+        const errorType = mePagesError.response?.data?.error?.type;
+        
         console.warn('⚠️ Error fetching pages from /me/accounts:', {
-          message: mePagesError.response?.data?.error?.message || mePagesError.message,
-          code: mePagesError.response?.data?.error?.code,
-          type: mePagesError.response?.data?.error?.type
+          message: errorMessage,
+          code: errorCode,
+          type: errorType
         });
+        
+        // Check if it's a permission error
+        const isPermissionError = 
+          errorMessage?.toLowerCase().includes('permission') ||
+          errorMessage?.toLowerCase().includes('pages_show_list') ||
+          errorCode === 200 || // Facebook uses 200 for permission errors sometimes
+          errorType === 'OAuthException';
+        
+        if (isPermissionError) {
+          console.error('🚨 PERMISSION ERROR DETECTED:', {
+            message: errorMessage,
+            solution: 'User needs to grant pages_show_list permission in Facebook App settings'
+          });
+        }
         
         // Fallback: try with userId if we have it
         if (fbUserId && !facebookPageId) {
@@ -173,11 +191,18 @@ export default withIronSessionApiRoute(
               console.log('✅ Facebook Page ID (from userId endpoint):', facebookPageId);
             }
           } catch (userIdPagesError: any) {
+            const userIdErrorMsg = userIdPagesError.response?.data?.error?.message || userIdPagesError.message;
             console.error('❌ Error fetching pages from userId endpoint:', {
-              message: userIdPagesError.response?.data?.error?.message || userIdPagesError.message,
+              message: userIdErrorMsg,
               code: userIdPagesError.response?.data?.error?.code,
               type: userIdPagesError.response?.data?.error?.type
             });
+            
+            // Check if this is also a permission error
+            if (userIdErrorMsg?.toLowerCase().includes('permission') || 
+                userIdErrorMsg?.toLowerCase().includes('pages_show_list')) {
+              console.error('🚨 PERMISSION ERROR: pages_show_list permission is required');
+            }
           }
         }
       }
@@ -224,24 +249,43 @@ export default withIronSessionApiRoute(
       });
 
       // Warn if critical data is missing
+      const hasPermissionIssue = !facebookPageId && fbUserId; // Has user ID but no pages = likely permission issue
+      
       if (!fbUserId || !facebookPageId) {
         console.warn('⚠️ Connection completed but missing data:', {
           hasFbUserId: !!fbUserId,
-          hasFacebookPageId: !!facebookPageId
+          hasFacebookPageId: !!facebookPageId,
+          likelyPermissionIssue: hasPermissionIssue
         });
+      }
+
+      let message = 'Facebook connected successfully for Meta Ads';
+      let warningMessage = null;
+      
+      if (!fbUserId && !facebookPageId) {
+        message = 'Facebook connection attempted, but could not retrieve user or page data. Please try again.';
+      } else if (!facebookPageId) {
+        if (hasPermissionIssue) {
+          message = 'Facebook connected, but page access requires additional permissions';
+          warningMessage = 'PERMISSION_REQUIRED';
+        } else {
+          message = 'Facebook connected, but no pages found. You can select a page manually when creating ads.';
+        }
+      } else if (!fbUserId) {
+        message = 'Facebook connected, but user ID could not be retrieved. Page connection successful.';
       }
 
       return res.status(200).json({
         status: 'success',
         statusCode: 200,
-        message: fbUserId && facebookPageId 
-          ? 'Facebook connected successfully for Meta Ads'
-          : 'Facebook connected, but some data may be missing. Please check server logs.',
+        message,
         data: {
           workspace: updatedWorkspace,
           pagesCount: facebookPageId ? 1 : 0,
           fbUserId,
-          facebookPageId
+          facebookPageId,
+          hasPermissionIssue,
+          warning: warningMessage
         }
       });
 
