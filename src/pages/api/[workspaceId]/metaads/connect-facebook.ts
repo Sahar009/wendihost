@@ -278,17 +278,22 @@ export default withIronSessionApiRoute(
         message = 'Facebook connected, but user ID could not be retrieved. Page connection successful.';
       }
 
+      // Convert BigInt to string for JSON serialization
+      const serializedWorkspace = {
+        ...updatedWorkspace,
+        fbUserId: updatedWorkspace.fbUserId ? String(updatedWorkspace.fbUserId) : null
+      };
+
       return res.status(200).json({
         status: 'success',
         statusCode: 200,
         message,
         data: {
-          workspace: updatedWorkspace,
+          workspace: serializedWorkspace,
           pagesCount: facebookPageId ? 1 : 0,
-          fbUserId,
+          fbUserId: fbUserId ? String(fbUserId) : null,
           facebookPageId,
-          hasPermissionIssue,
-          warning: warningMessage
+          hasPermissionIssue
         }
       });
 

@@ -225,13 +225,19 @@ export default withIronSessionApiRoute(
 
       const workspace = await prisma.workspace.findUnique({ where: { id: Number(workspaceId) } })
 
+      // Convert BigInt to string for JSON serialization
+      const serializedWorkspace = workspace ? {
+        ...workspace,
+        fbUserId: workspace.fbUserId ? String(workspace.fbUserId) : null
+      } : null;
+
       return res.send({ 
         status: 'success',
         statusCode: 200,
         message: "WhatsApp Business account connected successfully",
         data: {
           phone: displayPhoneNumber,
-          workspace: workspace
+          workspace: serializedWorkspace
         }
       });
             

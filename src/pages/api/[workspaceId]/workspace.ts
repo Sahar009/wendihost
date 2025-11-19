@@ -71,11 +71,17 @@ export default withIronSessionApiRoute(
         });
       }
 
+      // Convert BigInt to string for JSON serialization
+      const serializedWorkspace = {
+        ...workspace,
+        fbUserId: workspace.fbUserId ? String(workspace.fbUserId) : null
+      };
+
       return res.status(200).json({
         status: 'success',
         statusCode: 200,
         message: 'Workspace data retrieved successfully',
-        data: workspace
+        data: serializedWorkspace
       });
 
     } catch (error) {
