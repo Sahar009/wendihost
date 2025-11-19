@@ -38,18 +38,19 @@ export default function MetaAdsSetup() {
   const handleFacebookConnection = async (code: string) => {
     try {
       setIsLoading(true);
-      const response = await axios.post('/api/facebook/callback', {
-        code,
-        workspaceId: currentWorkspace.id
+      const response = await axios.post(`/api/${currentWorkspace.id}/metaads/connect-facebook`, {
+        code
       });
 
       if (response.data.status === 'success') {
-        toast.success('Facebook account connected successfully!');
-        fetchAccountInfo();
+        toast.success('Facebook account connected successfully for Meta Ads!');
+        // Refresh the page or update workspace state to reflect changes
+        window.location.reload();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting Facebook:', error);
-      toast.error('Failed to connect Facebook account');
+      const errorMessage = error.response?.data?.message || 'Failed to connect Facebook account';
+      toast.error(errorMessage);
     } finally {
       setIsConnecting(false);
       setIsLoading(false);
@@ -73,31 +74,39 @@ export default function MetaAdsSetup() {
     }
   };
 
+  // Check if Meta Ads is connected (has fbUserId and facebookPageId)
+  // This is different from WhatsApp connection which only needs accessToken
+  const isMetaAdsConnected = currentWorkspace?.fbUserId && currentWorkspace?.facebookPageId;
+  const isWhatsAppConnected = currentWorkspace?.phone;
+
   useEffect(() => {
-    if (currentWorkspace?.accessToken) {
+    // Only fetch account info if Meta Ads is properly connected (has fbUserId and facebookPageId)
+    if (isMetaAdsConnected) {
       fetchAccountInfo();
     }
-  }, [currentWorkspace]);
-
-  const isFacebookConnected = currentWorkspace?.accessToken;
-  const isWhatsAppConnected = currentWorkspace?.phone;
+  }, [isMetaAdsConnected]);
 
   return (
     <div className="w-full">
       {/* Setup card */}
       <div className="bg-white rounded-xl p-6 shadow flex flex-col gap-6">
-        {/* Facebook Connection */}
+        {/* Facebook Connection for Meta Ads */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <div className="font-semibold mb-1">Connect your Facebook account</div>
+            <div className="font-semibold mb-1">Connect your Facebook account for Meta Ads</div>
             <div className="text-gray-500 text-sm mb-2">
-              {isFacebookConnected 
-                ? 'Facebook account is connected ✓' 
-                : 'Allow wendi to receive advertisement analytics and events from Facebook'
+              {isMetaAdsConnected 
+                ? 'Facebook account is connected for Meta Ads ✓' 
+                : 'Connect your Facebook account with page permissions to create and manage Meta Ads'
               }
             </div>
+            {!isMetaAdsConnected && currentWorkspace?.accessToken && (
+              <div className="text-amber-600 text-xs mt-1">
+                ⚠️ You have WhatsApp connected, but need to connect Facebook separately for Meta Ads with page permissions
+              </div>
+            )}
           </div>
-          {isFacebookConnected ? (
+          {isMetaAdsConnected ? (
             <span className="text-green-600 text-sm font-medium">Connected</span>
           ) : (
             <LoadingButton 
@@ -105,13 +114,29 @@ export default function MetaAdsSetup() {
               loading={isConnecting}
               className="bg-primary text-white px-4 py-2 rounded-md font-medium text-sm"
             >
-              Connect Facebook
+              Connect Facebook for Meta Ads
             </LoadingButton>
           )}
         </div>
 
+        {/* Connected Facebook Page Info */}
+        {isMetaAdsConnected && currentWorkspace?.facebookPageId && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <div className="font-semibold mb-1">Connected Facebook Page</div>
+              <div className="text-gray-500 text-sm mb-2">Your Facebook page for publishing ads</div>
+            </div>
+            <div className="text-right">
+              <div className="font-medium text-sm">Page ID: {currentWorkspace.facebookPageId}</div>
+              {currentWorkspace.fbUserId && (
+                <div className="text-xs text-gray-500">User ID: {currentWorkspace.fbUserId}</div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Connected Ad Account Info */}
-        {isFacebookConnected && adAccountInfo && (
+        {isMetaAdsConnected && adAccountInfo && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
               <div className="font-semibold mb-1">Connected Ad Account</div>
@@ -124,19 +149,6 @@ export default function MetaAdsSetup() {
           </div>
         )}
 
-        {/* Connected Facebook Page Info */}
-        {isFacebookConnected && pageInfo && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <div className="font-semibold mb-1">Connected Facebook Page</div>
-              <div className="text-gray-500 text-sm mb-2">Your Facebook page for publishing ads</div>
-            </div>
-            <div className="text-right">
-              <div className="font-medium text-sm">{pageInfo.name}</div>
-              <div className="text-xs text-gray-500">ID: {pageInfo.id}</div>
-            </div>
-          </div>
-        )}
 
         {/* WhatsApp Connection */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -175,7 +187,7 @@ export default function MetaAdsSetup() {
         </div>
 
         {/* Setup Status */}
-        {isFacebookConnected && isWhatsAppConnected && (
+        {isMetaAdsConnected && isWhatsAppConnected && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>

@@ -259,8 +259,21 @@ export default function Dashboard(props: IProps) {
     }, [workspaceId]);
 
 
+    const isAuthenticating = useRef(false)
+
     useEffect(() => {
         const authenticateBusiness = async () => {
+            // Prevent duplicate calls
+            if (isAuthenticating.current) {
+                console.log('Authentication already in progress, skipping...')
+                return
+            }
+
+            if (!accessCode || !phoneNumberId || !wabaId) {
+                return
+            }
+
+            isAuthenticating.current = true
             toast.info("Please wait..., Onboarding in progress")
             try {
                 const body = { code: accessCode, phoneNumberId, wabaId }
@@ -292,12 +305,12 @@ export default function Dashboard(props: IProps) {
                 setAccessCode(null)
                 setPhoneNumberId(null)
                 setWabaId(null)
+                isAuthenticating.current = false
             }
         }
-        if (accessCode && phoneNumberId && wabaId) {
-            authenticateBusiness()
-        }
-    }, [accessCode, fetchDashboardData, phoneNumberId, router, wabaId, workspaceId, workspace, dispatch])
+        
+        authenticateBusiness()
+    }, [accessCode, phoneNumberId, wabaId, workspaceId])
 
 
     useEffect(() => {
