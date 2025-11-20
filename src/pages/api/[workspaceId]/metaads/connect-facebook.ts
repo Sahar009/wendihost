@@ -175,8 +175,9 @@ export default withIronSessionApiRoute(
         // Fallback: try with userId if we have it
         if (fbUserId && !facebookPageId) {
           try {
-            console.log(`🔍 Trying pages with userId: ${fbUserId}...`);
-            const userIdPagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${fbUserId}/accounts`, {
+            const userIdStr = String(fbUserId);
+            console.log(`🔍 Trying pages with userId: ${userIdStr}...`);
+            const userIdPagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}${userIdStr}/accounts`, {
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
@@ -246,7 +247,7 @@ export default withIronSessionApiRoute(
 
       console.log('✅ Workspace updated:', {
         id: updatedWorkspace.id,
-        fbUserId: updatedWorkspace.fbUserId,
+        fbUserId: updatedWorkspace.fbUserId ? String(updatedWorkspace.fbUserId) : null,
         facebookPageId: updatedWorkspace.facebookPageId,
         hasAccessToken: !!updatedWorkspace.accessToken
       });
@@ -279,10 +280,16 @@ export default withIronSessionApiRoute(
       }
 
       // Convert BigInt to string for JSON serialization
-      const serializedWorkspace = {
-        ...updatedWorkspace,
-        fbUserId: updatedWorkspace.fbUserId ? String(updatedWorkspace.fbUserId) : null
-      };
+      // Manually serialize to ensure all BigInt values are converted
+      const serializedWorkspace: any = {};
+      Object.keys(updatedWorkspace).forEach((key) => {
+        const value = (updatedWorkspace as any)[key];
+        if (typeof value === 'bigint') {
+          serializedWorkspace[key] = value.toString();
+        } else {
+          serializedWorkspace[key] = value;
+        }
+      });
 
       return res.status(200).json({
         status: 'success',
