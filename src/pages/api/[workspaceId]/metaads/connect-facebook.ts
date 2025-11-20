@@ -279,30 +279,44 @@ export default withIronSessionApiRoute(
         message = 'Facebook connected, but user ID could not be retrieved. Page connection successful.';
       }
 
-      // Convert BigInt to string for JSON serialization
-      // Manually serialize to ensure all BigInt values are converted
-      const serializedWorkspace: any = {};
-      Object.keys(updatedWorkspace).forEach((key) => {
-        const value = (updatedWorkspace as any)[key];
-        if (typeof value === 'bigint') {
-          serializedWorkspace[key] = value.toString();
-        } else {
-          serializedWorkspace[key] = value;
+      // Recursive function to convert all BigInt values to strings
+      const convertBigIntToString = (obj: any): any => {
+        if (obj === null || obj === undefined) {
+          return obj;
         }
-      });
+        if (typeof obj === 'bigint') {
+          return obj.toString();
+        }
+        if (Array.isArray(obj)) {
+          return obj.map(convertBigIntToString);
+        }
+        if (typeof obj === 'object') {
+          const converted: any = {};
+          for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+              converted[key] = convertBigIntToString(obj[key]);
+            }
+          }
+          return converted;
+        }
+        return obj;
+      };
 
-      return res.status(200).json({
+      // Convert BigInt to string for JSON serialization
+      const responseData: ApiResponse = {
         status: 'success',
         statusCode: 200,
         message,
         data: {
-          workspace: serializedWorkspace,
+          workspace: convertBigIntToString(updatedWorkspace),
           pagesCount: facebookPageId ? 1 : 0,
           fbUserId: fbUserId ? String(fbUserId) : null,
           facebookPageId,
           hasPermissionIssue
         }
-      });
+      };
+
+      return res.status(200).json(responseData);
 
     } catch (error: any) {
       console.error('Error connecting Facebook for Meta Ads:', {
