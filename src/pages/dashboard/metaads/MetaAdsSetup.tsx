@@ -66,16 +66,16 @@ export default function MetaAdsSetup() {
           } else if (hasPermissionIssue) {
             // Show permission error with instructions
             toast.error(
-              'Permission Required: pages_show_list permission is needed. See instructions below.',
-              { autoClose: 8000 }
+              'Permission Required: pages_show_list permission is needed.',
+              { autoClose: 10000 }
             );
-            // Also show an info toast with instructions
+            // Also show an info toast with detailed instructions
             setTimeout(() => {
               toast.info(
-                'To fix: Go to developers.facebook.com/apps → Your App → Permissions → Add pages_show_list',
-                { autoClose: 12000 }
+                'How to fix: Go to developers.facebook.com/apps → Select your app → App Review → Permissions and Features → Find pages_show_list → Request it → Wait for approval, then reconnect',
+                { autoClose: 15000 }
               );
-            }, 1000);
+            }, 1500);
           } else {
             toast.warning(response.data.message || 'Connected, but some data may be missing.');
             console.warn('⚠️ Missing data:', {

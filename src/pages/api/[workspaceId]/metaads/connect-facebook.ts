@@ -140,6 +140,13 @@ export default withIronSessionApiRoute(
           
           console.log('Token scopes:', tokenInfo.scopes);
           console.log('Token type:', tokenInfo.type);
+          
+          // Check if token has pages_show_list permission
+          const hasPagesPermission = tokenInfo.scopes?.includes('pages_show_list');
+          console.log('Has pages_show_list permission:', hasPagesPermission);
+          if (!hasPagesPermission) {
+            console.warn('⚠️ Token does not have pages_show_list permission, even though it was requested in scope');
+          }
         } catch (debugError: any) {
           console.error('❌ Error fetching Facebook User ID from debug_token:', {
             message: debugError.response?.data?.error?.message || debugError.message,
@@ -148,10 +155,22 @@ export default withIronSessionApiRoute(
         }
       }
 
+      // Check token permissions before fetching pages
+      let tokenHasPagesPermission = false;
+      if (tokenInfo?.scopes) {
+        tokenHasPagesPermission = tokenInfo.scopes.includes('pages_show_list');
+        console.log('🔍 Token permission check:', {
+          hasPagesPermission: tokenHasPagesPermission,
+          allScopes: tokenInfo.scopes
+        });
+      }
+
       // Fetch Facebook pages
       // Try /me/accounts first (most reliable)
       try {
         console.log('🔍 Fetching pages from /me/accounts endpoint...');
+        console.log('Token has pages_show_list:', tokenHasPagesPermission);
+        
         const mePagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me/accounts`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -191,7 +210,18 @@ export default withIronSessionApiRoute(
         if (isPermissionError) {
           console.error('🚨 PERMISSION ERROR DETECTED:', {
             message: errorMessage,
-            solution: 'User needs to grant pages_show_list permission in Facebook App settings'
+            code: errorCode,
+            type: errorType,
+            tokenHasPermission: tokenHasPagesPermission,
+            solution: tokenHasPagesPermission 
+              ? 'Token has permission but API call failed. User may need to reconnect to get a fresh token with the permission.'
+              : 'User needs to reconnect Facebook to grant pages_show_list permission. The permission is available in app settings but not granted to this token.'
+          });
+        } else {
+          console.error('❌ Non-permission error fetching pages:', {
+            message: errorMessage,
+            code: errorCode,
+            type: errorType
           });
         }
         
@@ -276,7 +306,7 @@ export default withIronSessionApiRoute(
       });
 
       // Warn if critical data is missing
-      const hasPermissionIssue = !facebookPageId && fbUserId; // Has user ID but no pages = likely permission issue
+      const hasPermissionIssue = !facebookPageId && !!fbUserId; // Has user ID but no pages = likely permission issue
       
       if (!fbUserId || !facebookPageId) {
         console.warn('⚠️ Connection completed but missing data:', {
@@ -293,7 +323,7 @@ export default withIronSessionApiRoute(
         message = 'Facebook connection attempted, but could not retrieve user or page data. Please try again.';
       } else if (!facebookPageId) {
         if (hasPermissionIssue) {
-          message = 'Facebook connected, but page access requires additional permissions';
+          message = 'Facebook connected, but page access requires additional permissions. Please grant pages_show_list permission in your Facebook App settings.';
           warningMessage = 'PERMISSION_REQUIRED';
         } else {
           message = 'Facebook connected, but no pages found. You can select a page manually when creating ads.';
@@ -306,6 +336,9 @@ export default withIronSessionApiRoute(
       // This avoids any potential serialization issues
       const serializedWorkspace = convertBigIntToString(updatedWorkspace);
       
+      // Ensure hasPermissionIssue is explicitly a boolean
+      const permissionIssueBool = Boolean(hasPermissionIssue);
+      
       const responseData = {
         status: 'success' as const,
         statusCode: 200 as const,
@@ -315,7 +348,7 @@ export default withIronSessionApiRoute(
           pagesCount: facebookPageId ? 1 : 0,
           fbUserId: fbUserId ? String(fbUserId) : null,
           facebookPageId: facebookPageId || null,
-          hasPermissionIssue: hasPermissionIssue || false
+          hasPermissionIssue: permissionIssueBool
         }
       };
 
