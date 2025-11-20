@@ -30,6 +30,20 @@ export const getUserFromSession = (req: any) =>  {
   return req.session.user 
 }
 
+// Helper function to serialize BigInt values in workspace data for JSON
+const serializeWorkspace = (workspace: any) => {
+  if (!workspace) return null;
+  return {
+    ...workspace,
+    fbUserId: workspace.fbUserId ? String(workspace.fbUserId) : null
+  };
+};
+
+// Helper function to serialize workspaces array
+const serializeWorkspaces = (workspaces: any[]) => {
+  if (!workspaces) return [];
+  return workspaces.map(serializeWorkspace);
+};
 
 export const validateUser = async (req: any) => {
 
@@ -57,7 +71,13 @@ export const validateUser = async (req: any) => {
         }, 
       })
 
-      return user
+      if (!user) return ({redirect: '/auth/login'})
+
+      // Serialize BigInt values in workspaces for JSON
+      return {
+        ...user,
+        workspaces: serializeWorkspaces(user.workspaces || [])
+      }
     
     } else {
 
@@ -74,7 +94,11 @@ export const validateUser = async (req: any) => {
         }
       })
 
-      return { ...member, firstName: member?.name, workspaces:[workspaces]}
+      return { 
+        ...member, 
+        firstName: member?.name, 
+        workspaces: workspaces ? [serializeWorkspace(workspaces)] : []
+      }
     }
 
   } catch (e) {
