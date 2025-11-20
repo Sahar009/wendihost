@@ -7,6 +7,29 @@ import ServerError from '@/services/errors/serverError';
 import axios from 'axios';
 import { FACEBOOK_APP_ID, FACEBOOK_CLIENT_SECRET, FACEBOOK_BASE_ENDPOINT } from '@/libs/constants';
 
+// Recursive function to convert all BigInt values to strings (moved to top level for reuse)
+const convertBigIntToString = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  if (typeof obj === 'bigint') {
+    return obj.toString();
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(convertBigIntToString);
+  }
+  if (typeof obj === 'object') {
+    const converted: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        converted[key] = convertBigIntToString(obj[key]);
+      }
+    }
+    return converted;
+  }
+  return obj;
+};
+
 export default withIronSessionApiRoute(
   async function connectFacebookForMetaAds(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
     if (req.method !== 'POST') {
@@ -279,50 +302,51 @@ export default withIronSessionApiRoute(
         message = 'Facebook connected, but user ID could not be retrieved. Page connection successful.';
       }
 
-      // Recursive function to convert all BigInt values to strings
-      const convertBigIntToString = (obj: any): any => {
-        if (obj === null || obj === undefined) {
-          return obj;
-        }
-        if (typeof obj === 'bigint') {
-          return obj.toString();
-        }
-        if (Array.isArray(obj)) {
-          return obj.map(convertBigIntToString);
-        }
-        if (typeof obj === 'object') {
-          const converted: any = {};
-          for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-              converted[key] = convertBigIntToString(obj[key]);
-            }
-          }
-          return converted;
-        }
-        return obj;
-      };
-
-      // Convert BigInt to string for JSON serialization
-      const responseData: ApiResponse = {
-        status: 'success',
-        statusCode: 200,
+      // Manually construct response with explicit BigInt conversion
+      // This avoids any potential serialization issues
+      const serializedWorkspace = convertBigIntToString(updatedWorkspace);
+      
+      const responseData = {
+        status: 'success' as const,
+        statusCode: 200 as const,
         message,
         data: {
-          workspace: convertBigIntToString(updatedWorkspace),
+          workspace: serializedWorkspace,
           pagesCount: facebookPageId ? 1 : 0,
           fbUserId: fbUserId ? String(fbUserId) : null,
-          facebookPageId,
-          hasPermissionIssue
+          facebookPageId: facebookPageId || null,
+          hasPermissionIssue: hasPermissionIssue || false
         }
       };
 
-      return res.status(200).json(responseData);
+      // Use res.send() with manually stringified JSON to avoid Next.js auto-serialization
+      // This ensures BigInt values are properly converted before serialization
+      try {
+        const jsonString = JSON.stringify(responseData, (key, value) => {
+          if (typeof value === 'bigint') {
+            return value.toString();
+          }
+          return value;
+        });
+        
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(jsonString as any);
+      } catch (serializationError: any) {
+        console.error('JSON serialization error:', serializationError);
+        // Fallback: try without the replacer (shouldn't be needed since we already converted)
+        const jsonString = JSON.stringify(responseData);
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(jsonString as any);
+      }
 
     } catch (error: any) {
-      console.error('Error connecting Facebook for Meta Ads:', {
+      // Convert any BigInt values in error object before logging
+      const safeError = convertBigIntToString({
         error: error.response?.data || error.message,
         status: error.response?.status
       });
+      
+      console.error('Error connecting Facebook for Meta Ads:', safeError);
 
       const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to connect Facebook';
       return new ServerError(res, error.response?.status || 500, errorMessage);
