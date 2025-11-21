@@ -4,27 +4,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from 'axios';
 import { AutomationService } from '@/services/automation';
 import chatbotFlow from '@/services/chatbot';
+import { getEmbedding, cosineSimilarity } from '@/services/embeddings';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
-async function getGeminiEmbedding(text: string): Promise<number[]> {
-  const model = genAI.getGenerativeModel({ model: "embedding-001" });
-  const result = await model.embedContent(text);
-    return result.embedding.values;
-}
 
 async function getGeminiChatCompletion(prompt: string): Promise<string> {
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   //gemini-pro
   const result = await model.generateContent([prompt]);
   return result.response.text();
-}
-
-function cosineSimilarity(a: number[], b: number[]) {
-  const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
-  const normA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
-  const normB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
-  return dot / (normA * normB);
 }
 
 function normalizePhoneNumber(phone: string): string {
@@ -999,46 +987,47 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
               messageContent.length > 3 
           ) {
             console.log('Active assistant found, processing with semantic search...');
-            const messageEmbedding = await getGeminiEmbedding(messageContent);
+            try {
+              const messageEmbedding = await getEmbedding(messageContent, 'search_query');
 
-            const chunks = await prisma.assistantKnowledgeChunk.findMany({
-              where: { assistantId: assistant.id }
-            });
-
-           
-            if (chunks.length > 0) {
-              console.log(`Found ${chunks.length} knowledge chunks, generating AI response...`);
-              const scored = chunks.map(chunk => ({
-                ...chunk,
-                score: cosineSimilarity(messageEmbedding, chunk.embedding as number[])
-              }));
-              const topChunks = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-
-              const context = topChunks.map(c => c.content).join('\n');
-              const prompt = `User asked: ${messageContent}\nBusiness info:\n${context}`;
-
-              const reply = await getGeminiChatCompletion(prompt);
-              console.log('AI generated reply from semantic search:', reply.substring(0, 100) + '...');
-
-              if (!conversation) {
-                await sendWhatsAppMessage(normalizedPhone, reply, workspace);
-                console.log('AI semantic response sent without DB (no conversation)');
-                aiAutomationTriggered = true;
-              } else {
-                await prisma.message.create({
-                data: {
-                  phone: normalizedPhone,
-                  type: 'text',
-                  fromCustomer: false,
-                  isBot: true,
-                  fileType: 'none',
-                  message: reply,
-                  messageId: `ai_semantic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                  status: 'sent',
-                  conversationId: conversation.id,
-                  workspaceId: workspace.id
-                }
+              const chunks = await prisma.assistantKnowledgeChunk.findMany({
+                where: { assistantId: assistant.id }
               });
+
+             
+              if (chunks.length > 0) {
+                console.log(`Found ${chunks.length} knowledge chunks, generating AI response...`);
+                const scored = chunks.map(chunk => ({
+                  ...chunk,
+                  score: cosineSimilarity(messageEmbedding, chunk.embedding as number[])
+                }));
+                const topChunks = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+
+                const context = topChunks.map(c => c.content).join('\n');
+                const prompt = `User asked: ${messageContent}\nBusiness info:\n${context}`;
+
+                const reply = await getGeminiChatCompletion(prompt);
+                console.log('AI generated reply from semantic search:', reply.substring(0, 100) + '...');
+
+                if (!conversation) {
+                  await sendWhatsAppMessage(normalizedPhone, reply, workspace);
+                  console.log('AI semantic response sent without DB (no conversation)');
+                  aiAutomationTriggered = true;
+                } else {
+                  await prisma.message.create({
+                  data: {
+                    phone: normalizedPhone,
+                    type: 'text',
+                    fromCustomer: false,
+                    isBot: true,
+                    fileType: 'none',
+                    message: reply,
+                    messageId: `ai_semantic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    status: 'sent',
+                    conversationId: conversation.id,
+                    workspaceId: workspace.id
+                  }
+                });
 
                 await sendWhatsAppMessage(normalizedPhone, reply, workspace);
                 console.log('AI semantic search response sent successfully');
@@ -1047,6 +1036,11 @@ async function processIncomingMessages(messages: any[], contactInfo?: any, metad
               
             } else {
               console.log('No knowledge chunks found for AI processing');
+            }
+            } catch (embeddingError: any) {
+              console.error('❌ Error generating embedding for semantic search:', embeddingError);
+              // Continue without semantic search if embedding fails
+              console.log('Continuing without semantic search due to embedding error');
             }
           } else {
             console.log('Skipping AI automation:', {

@@ -29,7 +29,14 @@ export default withIronSessionApiRoute(
     
             if (!validatedInfo) return new ServerError(res, 401, "Unauthorized")
     
-            const { user } = validatedInfo 
+            const { user } = validatedInfo
+
+            // Check if Cloudinary is configured
+            if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 
+                !process.env.CLOUDINARY_API_KEY || 
+                !process.env.CLOUDINARY_API_SECRET) {
+                return new ServerError(res, 500, "Cloudinary is not configured. Please set Cloudinary environment variables.");
+            } 
 
             const form = formidable({ multiples: true });
 
@@ -47,19 +54,24 @@ export default withIronSessionApiRoute(
             const filesArray = Object.values(formFiles).flat();
 
             const uploads = []
+            const errors: string[] = []
 
             for (const file of filesArray) {
-                const fileName = file.originalFilename
+                const fileName = file.originalFilename || 'unknown'
                 const fileSize = file.size
                 const fileType = file.mimetype
 
                 try {
+                    console.log(`Uploading ${fileName} to Cloudinary...`);
+                    
                     // Upload to Cloudinary
                     const result = await cloudinary.uploader.upload(file.filepath, {
                         folder: `workspace-${workspaceId}`,
                         public_id: `${Date.now()}-${fileName}`,
                         resource_type: 'auto',
                     });
+
+                    console.log(`Successfully uploaded ${fileName} to Cloudinary`);
 
                     // Save file info to database
                     const upload = await prisma.upload.create({
@@ -74,23 +86,74 @@ export default withIronSessionApiRoute(
 
                     uploads.push(upload)
                 } catch (uploadError: any) {
-                    console.error('Cloudinary upload error:', uploadError);
+                    // Extract error information from nested error objects
+                    // Cloudinary errors can be nested: uploadError.error.error
+                    const actualError = uploadError.error?.error || uploadError.error || uploadError;
+                    const errorCode = actualError.code || uploadError.code;
+                    const errorSyscall = actualError.syscall || uploadError.syscall;
+                    const errorMessage = actualError.message || uploadError.message || 'Unknown error';
+                    const errorErrno = actualError.errno || uploadError.errno;
                     
-                    // If it's a DNS error, return a more helpful message
-                    if (uploadError.code === 'EAI_AGAIN') {
-                        return new ServerError(res, 500, "Cloudinary connection failed. Please check your internet connection and Cloudinary credentials.")
+                    console.error('Cloudinary upload error for', fileName, ':', {
+                        code: errorCode,
+                        syscall: errorSyscall,
+                        message: errorMessage,
+                        errno: errorErrno,
+                        http_code: uploadError.http_code,
+                        hasNestedError: !!uploadError.error?.error
+                    });
+                    
+                    // Build user-friendly error message
+                    let userErrorMessage = `Failed to upload ${fileName}`;
+                    
+                    // If it's a DNS error
+                    if (errorCode === 'EAI_AGAIN' || errorSyscall === 'getaddrinfo' || errorCode === 'ENOTFOUND') {
+                        userErrorMessage = `Cloudinary connection failed for ${fileName}. This is usually a network/DNS issue. Please check your internet connection and Cloudinary service status.`;
+                        errors.push(userErrorMessage);
+                        // Don't return immediately - continue to try other files
+                        continue;
                     }
                     
-                    throw new Error(`Failed to upload ${fileName} to Cloudinary: ${uploadError.message}`);
+                    // If it's a connection refused error
+                    if (errorCode === 'ECONNREFUSED') {
+                        userErrorMessage = `Cloudinary connection refused for ${fileName}. Please check your Cloudinary configuration and service status.`;
+                        errors.push(userErrorMessage);
+                        continue;
+                    }
+                    
+                    // Other Cloudinary errors
+                    if (uploadError.http_code) {
+                        userErrorMessage = `Cloudinary API error for ${fileName}: ${errorMessage} (HTTP ${uploadError.http_code})`;
+                    } else if (errorMessage && errorMessage !== 'Unknown error') {
+                        userErrorMessage = `Failed to upload ${fileName}: ${errorMessage}`;
+                    } else {
+                        userErrorMessage = `Failed to upload ${fileName}. Please check your Cloudinary configuration and try again.`;
+                    }
+                    
+                    errors.push(userErrorMessage);
+                    console.error(userErrorMessage);
                 }
             }
 
-            return res.send({
+            // Check if any files were successfully uploaded
+            if (uploads.length === 0) {
+                const errorMsg = errors.length > 0 
+                    ? `Failed to upload any files. Errors: ${errors.join('; ')}`
+                    : "Failed to upload any files. Please check your Cloudinary configuration and try again.";
+                return new ServerError(res, 500, errorMsg);
+            }
+
+            // Return success response
+            const message = uploads.length === filesArray.length 
+                ? "Files uploaded successfully" 
+                : `Uploaded ${uploads.length} of ${filesArray.length} files successfully${errors.length > 0 ? `. Some files failed: ${errors.join('; ')}` : ''}`;
+            
+            res.status(201).json({
                 status: 'success',
                 statusCode: 201,
-                message: "Files uploaded successfully",
+                message,
                 data: uploads
-            })
+            });
 
         } catch (e) {
             console.error(e)
@@ -99,3 +162,4 @@ export default withIronSessionApiRoute(
     },
     sessionCookie(),
 );
+

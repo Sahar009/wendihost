@@ -426,13 +426,59 @@ export class AutomationService {
           if (applicableRule.aiPrompt) {
             console.log('🧠 AUTOMATION: AI response triggered');
             try {
-              // Import AI service dynamically to avoid circular dependencies
-              const { GoogleGenerativeAI } = await import("@google/generative-ai");
-              const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-              const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-              const result = await model.generateContent([applicableRule.aiPrompt]);
-              const aiResponse = result.response.text();
-              console.log('🤖 AUTOMATION: AI generated response:', aiResponse.substring(0, 100) + '...');
+              // Check if there's an active assistant with embedded knowledge
+              const assistant = await prisma.assistant.findFirst({
+                where: { workspaceId: this.workspaceId, status: 'active' }
+              });
+              
+              let aiResponse: string;
+              
+              // If assistant exists with knowledge chunks, use semantic search
+              if (assistant && message) {
+                const chunks = await prisma.assistantKnowledgeChunk.findMany({
+                  where: { assistantId: assistant.id }
+                });
+                
+                if (chunks.length > 0) {
+                  console.log('📚 AUTOMATION: Using embedded knowledge base for AI response');
+                  
+                  // Get embedding for the user's message
+                  const { getEmbedding, cosineSimilarity } = await import('./embeddings');
+                  const messageEmbedding = await getEmbedding(message, 'search_query');
+                  
+                  const scored = chunks.map(chunk => ({
+                    ...chunk,
+                    score: cosineSimilarity(messageEmbedding, chunk.embedding as number[])
+                  }));
+                  const topChunks = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+                  
+                  const context = topChunks.map(c => c.content).join('\n');
+                  const prompt = `User asked: ${message}\nBusiness info:\n${context}\n\n${applicableRule.aiPrompt || 'Provide a helpful response based on the business information above.'}`;
+                  
+                  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+                  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+                  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+                  const result = await model.generateContent([prompt]);
+                  aiResponse = result.response.text();
+                  
+                  console.log('🤖 AUTOMATION: AI generated response with embedded knowledge:', aiResponse.substring(0, 100) + '...');
+                } else {
+                  // No knowledge chunks, use just the aiPrompt
+                  console.log('📝 AUTOMATION: No knowledge chunks found, using aiPrompt only');
+                  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+                  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+                  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+                  const result = await model.generateContent([applicableRule.aiPrompt]);
+                  aiResponse = result.response.text();
+                }
+              } else {
+                // No assistant or message, use just the aiPrompt
+                const { GoogleGenerativeAI } = await import("@google/generative-ai");
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+                const result = await model.generateContent([applicableRule.aiPrompt]);
+                aiResponse = result.response.text();
+              }
               
               // Send the AI response directly
               const { sendTextMsg } = await import('./waba/send-msg');

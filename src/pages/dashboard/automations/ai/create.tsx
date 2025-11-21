@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { withIronSessionSsr } from 'iron-session/next';
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session';
-import { ArrowLeft, Save, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Plus, FileText, X, CheckCircle2, Upload, Loader2, File, FileType, FileSpreadsheet, FileCode } from 'lucide-react';
 import axios from 'axios'; 
 import { useSelector } from 'react-redux'; 
 import { getCurrentWorkspace } from '@/store/slices/system'; 
@@ -71,9 +71,26 @@ export default function CreateAIBotPage({ user: userString }: IProps) {
         console.log(`📚 UPLOADING KNOWLEDGE: Successfully uploaded ${res.data.chunks} chunks`);
         toast.success(`Knowledge uploaded successfully! Created ${res.data.chunks} knowledge chunks.`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('📚 UPLOADING KNOWLEDGE: Error:', err);
-      toast.error('Failed to upload and embed knowledge');
+      
+      // Show more detailed error message
+      const errorMessage = err.response?.data?.details || err.response?.data?.error || err.message || 'Failed to upload and embed knowledge';
+      const errorType = err.response?.data?.error || 'Unknown error';
+      
+      if (errorMessage.includes('Model is loading')) {
+        toast.error('Hugging Face model is loading. Please wait 10-30 seconds and try again.', {
+          autoClose: 8000,
+        });
+      } else if (errorMessage.includes('Rate limit') || errorMessage.includes('rate_limit')) {
+        toast.error('Rate limit exceeded. Please wait a moment and try again, or add HUGGINGFACE_API_KEY for higher limits.', {
+          autoClose: 6000,
+        });
+      } else if (errorMessage.includes('Network') || errorMessage.includes('connection')) {
+        toast.error('Network error. Please check your internet connection and try again.');
+      } else {
+        toast.error(`Failed to upload knowledge: ${errorMessage.substring(0, 150)}`);
+      }
     }
   };
 
@@ -181,12 +198,39 @@ export default function CreateAIBotPage({ user: userString }: IProps) {
         method: 'POST',
         body: form,
       });
-      if (!res.ok) throw new Error('Upload failed');
+      
       const data = await res.json();
+      
+      if (!res.ok) {
+        // Extract error message from various possible response formats
+        const errorMessage = data?.message || data?.error || data?.errors?.join('; ') || 'Upload failed';
+        console.error('Upload error:', { status: res.status, data });
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
       const newDocs = Array.isArray(data?.data) ? data.data : [];
-      setUploadedDocs(prev => [...prev, ...newDocs]);
-    } catch (err) {
+      if (newDocs.length > 0) {
+        // Map the API response to match our expected format
+        const formattedDocs = newDocs.map((doc: any) => ({
+          id: doc.id,
+          filename: doc.filename,
+          url: doc.url,
+          type: doc.type,
+          size: doc.size,
+          workspaceId: doc.workspaceId
+        }));
+        setUploadedDocs(prev => [...prev, ...formattedDocs]);
+        toast.success(`Successfully uploaded ${newDocs.length} file(s)`);
+      } else {
+        toast.warning('No files were uploaded');
+      }
+    } catch (err: any) {
       console.error('Upload error:', err);
+      // Error toast is already shown above if it's a server error
+      if (!err.message || !err.message.includes('Upload failed')) {
+        toast.error(err.message || 'Failed to upload files');
+      }
     } finally {
       setIsUploading(false);
       if (e.target) e.target.value = '' as any;
@@ -365,37 +409,117 @@ export default function CreateAIBotPage({ user: userString }: IProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Upload Documents
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.txt,.md,.csv,.doc,.docx"
-                    multiple
-                    onChange={handleFilesSelected}
-                    className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    disabled={isUploading}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Supported: PDF, TXT, MD, CSV, DOC, DOCX</p>
+                  
+                  {/* Upload Area */}
+                  <div className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isUploading 
+                      ? 'border-blue-400 bg-blue-50' 
+                      : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                  }`}>
+                    <input
+                      type="file"
+                      accept=".pdf,.txt,.md,.csv,.doc,.docx"
+                      multiple
+                      onChange={handleFilesSelected}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isUploading}
+                      id="file-upload"
+                    />
+                    <div className="text-center">
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+                          <p className="text-sm font-medium text-gray-700">Uploading files...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm font-medium text-gray-700">
+                            Click to upload or drag and drop
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Supported: PDF, TXT, MD, CSV, DOC, DOCX (Max 50MB)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
+                  {/* Uploaded Files List */}
                   {uploadedDocs.length > 0 && (
-                    <div className="mt-3 border border-gray-200 rounded-md divide-y">
-                      {uploadedDocs.map((doc, idx) => (
-                        <div key={`${doc.url}-${idx}`} className="flex items-center justify-between px-3 py-2 text-sm">
-                          <div className="min-w-0 mr-3">
-                            <p className="truncate text-gray-800">{doc.filename || doc.url}</p>
-                            <p className="text-xs text-gray-500">{doc.type} • {Math.round((doc.size || 0) / 1024)} KB</p>
-                          </div>
-                          <button
-                            type="button"
-                            className="text-red-600 hover:text-red-700 text-xs"
-                            onClick={() => removeDoc(idx)}
-                            disabled={isUploading}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          Uploaded Files ({uploadedDocs.length})
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {uploadedDocs.map((doc, idx) => {
+                          const fileSizeKB = Math.round((doc.size || 0) / 1024);
+                          const fileSizeMB = (doc.size || 0) / (1024 * 1024);
+                          const displaySize = fileSizeMB >= 1 
+                            ? `${fileSizeMB.toFixed(2)} MB` 
+                            : `${fileSizeKB} KB`;
+                          
+                          // Get file icon component based on type
+                          const getFileIcon = () => {
+                            const type = doc.type?.toLowerCase() || '';
+                            const iconClass = "w-5 h-5 text-blue-600";
+                            
+                            if (type.includes('pdf')) {
+                              return <FileText className={iconClass} />;
+                            }
+                            if (type.includes('word') || type.includes('document')) {
+                              return <FileType className={iconClass} />;
+                            }
+                            if (type.includes('text') || type.includes('plain') || type.includes('markdown')) {
+                              return <FileCode className={iconClass} />;
+                            }
+                            if (type.includes('csv') || type.includes('spreadsheet') || type.includes('excel')) {
+                              return <FileSpreadsheet className={iconClass} />;
+                            }
+                            return <File className={iconClass} />;
+                          };
+
+                          return (
+                            <div 
+                              key={doc.id ? `doc-${doc.id}` : `doc-${idx}-${doc.url}`} 
+                              className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors group"
+                            >
+                              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                {getFileIcon()}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {doc.filename || doc.url?.split('/').pop() || 'Unknown file'}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500">{displaySize}</span>
+                                  <span className="text-xs text-gray-400">•</span>
+                                  <span className="text-xs text-gray-500 capitalize">
+                                    {doc.type?.split('/').pop()?.toUpperCase() || 'Unknown'}
+                                  </span>
+                                  <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                </div>
+                              </div>
+                              
+                              <button
+                                type="button"
+                                className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                onClick={() => removeDoc(idx)}
+                                disabled={isUploading}
+                                title="Remove file"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
