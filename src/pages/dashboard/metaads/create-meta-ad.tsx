@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Upload } from '@/components/utils/Upload';
 import { useSelector } from 'react-redux';
 import { getCurrentWorkspace } from '@/store/slices/system';
@@ -112,6 +112,18 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
   const workspace = useSelector(getCurrentWorkspace);
   const [availablePages, setAvailablePages] = useState<Array<{id: string; name: string; category?: string}>>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
+  
+  // Page verification state
+  const [isVerifyingPage, setIsVerifyingPage] = useState(false);
+  const [pageVerificationStatus, setPageVerificationStatus] = useState<'idle' | 'verifying' | 'verified' | 'error'>('idle');
+  const [verifiedPageInfo, setVerifiedPageInfo] = useState<{name?: string; category?: string} | null>(null);
+  const [pageVerificationError, setPageVerificationError] = useState<string | null>(null);
+  
+  // Use ref to access latest availablePages without causing dependency issues
+  const availablePagesRef = useRef<Array<{id: string; name: string; category?: string}>>([]);
+  useEffect(() => {
+    availablePagesRef.current = availablePages;
+  }, [availablePages]);
 
   // Fetch available Facebook pages
   useEffect(() => {
@@ -151,6 +163,91 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
       setPageId(workspace.facebookPageId);
     }
   }, [workspace?.facebookPageId, pageId, availablePages.length, setPageId]);
+
+  // Verify Facebook page ID
+  const verifyPageId = useCallback(async (pageIdToVerify: string) => {
+    if (!pageIdToVerify || !pageIdToVerify.trim()) {
+      setPageVerificationStatus('idle');
+      setVerifiedPageInfo(null);
+      setPageVerificationError(null);
+      return;
+    }
+
+    // Reset if pageId is from available pages (already verified)
+    const currentPages = availablePagesRef.current;
+    if (currentPages.some(page => page.id === pageIdToVerify)) {
+      const foundPage = currentPages.find(page => page.id === pageIdToVerify);
+      setPageVerificationStatus('verified');
+      setVerifiedPageInfo({ name: foundPage?.name, category: foundPage?.category });
+      setPageVerificationError(null);
+      return;
+    }
+
+    setIsVerifyingPage(true);
+    setPageVerificationStatus('verifying');
+    setPageVerificationError(null);
+    setVerifiedPageInfo(null);
+
+    try {
+      const response = await fetch(`/api/${workspaceId}/metaads/verify-page?pageId=${encodeURIComponent(pageIdToVerify.trim())}`);
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        setPageVerificationStatus('verified');
+        setVerifiedPageInfo({
+          name: data.data?.name,
+          category: data.data?.category
+        });
+        setPageVerificationError(null);
+      } else {
+        setPageVerificationStatus('error');
+        setPageVerificationError(data.message || 'Page ID not found or invalid');
+        setVerifiedPageInfo(null);
+      }
+    } catch (error) {
+      console.error('Error verifying page ID:', error);
+      setPageVerificationStatus('error');
+      setPageVerificationError('Failed to verify page ID. Please check your connection.');
+      setVerifiedPageInfo(null);
+    } finally {
+      setIsVerifyingPage(false);
+    }
+  }, [workspaceId]);
+
+  // Debounced verification on pageId change (only when manually entered)
+  useEffect(() => {
+    const currentPages = availablePagesRef.current;
+    if (currentPages.length > 0) {
+      // If pages are available, check if current pageId is in the list
+      if (pageId && currentPages.some(page => page.id === pageId)) {
+        const foundPage = currentPages.find(page => page.id === pageId);
+        setPageVerificationStatus('verified');
+        setVerifiedPageInfo({ name: foundPage?.name, category: foundPage?.category });
+        setPageVerificationError(null);
+      } else if (pageId && !currentPages.some(page => page.id === pageId)) {
+        // Reset verification if pageId changed to something not in the list
+        setPageVerificationStatus('idle');
+        setVerifiedPageInfo(null);
+        setPageVerificationError(null);
+      }
+      return;
+    }
+
+    // Only verify if no pages are available (manual entry mode)
+    if (!pageId || !pageId.trim()) {
+      setPageVerificationStatus('idle');
+      setVerifiedPageInfo(null);
+      setPageVerificationError(null);
+      return;
+    }
+
+    // Debounce verification
+    const timeoutId = setTimeout(() => {
+      verifyPageId(pageId);
+    }, 1000); // Wait 1 second after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [pageId, availablePages.length, verifyPageId, workspaceId]);
 
   // Update objectives and CTAs based on ad type
   const currentObjectives = adObjectives[adType];
@@ -429,23 +526,70 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                         ))}
                       </select>
                     ) : (
-                      <input
-                        type="text"
-                        id="pageId"
-                        name="pageId"
-                        className="shadow-sm focus:ring-2 focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-lg px-4 py-2.5"
-                        value={pageId}
-                        onChange={(e) => setPageId(e.target.value)}
-                        placeholder="e.g., 123456789012345"
-                        required={adType === 'whatsapp'}
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          id="pageId"
+                          name="pageId"
+                          className={`shadow-sm focus:ring-2 focus:ring-primary focus:border-primary block w-full sm:text-sm rounded-lg px-4 py-2.5 pr-10 ${
+                            pageVerificationStatus === 'verified' 
+                              ? 'border-green-500 bg-green-50' 
+                              : pageVerificationStatus === 'error'
+                              ? 'border-red-500 bg-red-50'
+                              : 'border-gray-300'
+                          }`}
+                          value={pageId}
+                          onChange={(e) => setPageId(e.target.value)}
+                          onBlur={() => pageId && !availablePages.some(p => p.id === pageId) && verifyPageId(pageId)}
+                          placeholder="e.g., 123456789012345"
+                          required={adType === 'whatsapp'}
+                        />
+                        {pageId && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            {isVerifyingPage ? (
+                              <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : pageVerificationStatus === 'verified' ? (
+                              <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : pageVerificationStatus === 'error' ? (
+                              <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
                     )}
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      {availablePages.length > 0 
-                        ? 'Select your Facebook page from the list above'
-                        : 'Enter your Facebook page ID manually or connect your account to see available pages'
-                      }
-                    </p>
+                    {pageVerificationStatus === 'verified' && verifiedPageInfo && (
+                      <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Page verified: {verifiedPageInfo.name || 'Valid page'} {verifiedPageInfo.category ? `(${verifiedPageInfo.category})` : ''}</span>
+                      </p>
+                    )}
+                    {pageVerificationStatus === 'error' && pageVerificationError && (
+                      <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{pageVerificationError}</span>
+                      </p>
+                    )}
+                    {pageVerificationStatus === 'idle' && availablePages.length === 0 && (
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        Enter your Facebook page ID manually or connect your account to see available pages. The page ID will be verified automatically.
+                      </p>
+                    )}
+                    {availablePages.length > 0 && (
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        Select your Facebook page from the list above
+                      </p>
+                    )}
                   </div>
                 </div>
               <div>
@@ -502,23 +646,70 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
                         ))}
                       </select>
                     ) : (
-                    <input
-                      type="text"
-                      id="pageId"
-                      name="pageId"
-                        className="shadow-sm focus:ring-2 focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-lg px-4 py-2.5"
-                      value={pageId}
-                      onChange={(e) => setPageId(e.target.value)}
-                      placeholder="e.g., 123456789012345"
-                      required={adType === 'facebook'}
-                    />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          id="pageId"
+                          name="pageId"
+                          className={`shadow-sm focus:ring-2 focus:ring-primary focus:border-primary block w-full sm:text-sm rounded-lg px-4 py-2.5 pr-10 ${
+                            pageVerificationStatus === 'verified' 
+                              ? 'border-green-500 bg-green-50' 
+                              : pageVerificationStatus === 'error'
+                              ? 'border-red-500 bg-red-50'
+                              : 'border-gray-300'
+                          }`}
+                          value={pageId}
+                          onChange={(e) => setPageId(e.target.value)}
+                          onBlur={() => pageId && !availablePages.some(p => p.id === pageId) && verifyPageId(pageId)}
+                          placeholder="e.g., 123456789012345"
+                          required={adType === 'facebook'}
+                        />
+                        {pageId && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            {isVerifyingPage ? (
+                              <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : pageVerificationStatus === 'verified' ? (
+                              <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : pageVerificationStatus === 'error' ? (
+                              <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
                     )}
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      {availablePages.length > 0 
-                        ? 'Select your Facebook page from the list above'
-                        : 'Enter your Facebook page ID manually or connect your account to see available pages'
-                      }
-                    </p>
+                    {pageVerificationStatus === 'verified' && verifiedPageInfo && (
+                      <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Page verified: {verifiedPageInfo.name || 'Valid page'} {verifiedPageInfo.category ? `(${verifiedPageInfo.category})` : ''}</span>
+                      </p>
+                    )}
+                    {pageVerificationStatus === 'error' && pageVerificationError && (
+                      <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{pageVerificationError}</span>
+                      </p>
+                    )}
+                    {pageVerificationStatus === 'idle' && availablePages.length === 0 && (
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        Enter your Facebook page ID manually or connect your account to see available pages. The page ID will be verified automatically.
+                      </p>
+                    )}
+                    {availablePages.length > 0 && (
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        Select your Facebook page from the list above
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>

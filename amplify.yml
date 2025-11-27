@@ -37,6 +37,9 @@ frontend:
         - printf "GEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" >> .env.production
         - printf "CLOUDINARY_URL=%s\n" "$CLOUDINARY_URL" >> .env.production
         - printf "CLOUDINARY_API_KEY=%s\n" "$CLOUDINARY_API_KEY" >> .env.production
+        - printf "SYSTEM_USER_ID=%s\n" "$SYSTEM_USER_ID" >> .env.production
+        - printf "OPENAI_API_KEY=%s\n" "$OPENAI_API_KEY" >> .env.production
+        - printf "COHERE_API_KEY=%s\n" "$COHERE_API_KEY" >> .env.production
         - echo "Generating Prisma Client..."
         - npx prisma generate
     build:

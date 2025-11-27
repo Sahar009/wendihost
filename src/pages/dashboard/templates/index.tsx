@@ -20,16 +20,21 @@ import useSWR, { mutate } from 'swr'
 
 export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
 
-    const user = await validateUser(req)
+    try {
+        const user = await validateUser(req)
 
-    const data = user as any
+        const data = user as any
 
-    if (data?.redirect) return sessionRedirects(data?.redirect)
-    
-    return { 
-      props: {
-        user: JSON.stringify(user),
-      }, 
+        if (data?.redirect) return sessionRedirects(data?.redirect)
+        
+        return { 
+          props: {
+            user: JSON.stringify(user || {}),
+          }, 
+        }
+    } catch (error) {
+        console.error('Error in getServerSideProps:', error);
+        return sessionRedirects('/auth/login');
     }
     
 }, sessionCookie())
@@ -41,24 +46,35 @@ interface IProps {
 
 export default function Template(props: IProps) {
 
-    const user = JSON.parse(props.user)
+    let user;
+    try {
+        user = JSON.parse(props.user || '{}');
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+        user = {};
+    }
 
     const [data, setData] = useState<any[]>([])
 
     const [preview, setPreview] = useState<MESSAGE_COMPONENT[] | null>(null)
 
-    const { id: workspaceId } = useSelector(getCurrentWorkspace)
+    const workspace = useSelector(getCurrentWorkspace)
+    const workspaceId = workspace?.id
 
     const getData = useSWR(workspaceId ? `/api/${workspaceId}/template/get?page=${1}` : null, axios)
 
     const router = useRouter()
 
     useEffect(() => {
-        if (!workspaceId) return;
+        if (!workspaceId) {
+            setData([]);
+            return;
+        }
         
         if (getData.error) {
             console.error('Error fetching templates:', getData.error);
             toast.error('Failed to fetch templates. Please check your connection.');
+            setData([]);
             return;
         }
         
@@ -69,60 +85,68 @@ export default function Template(props: IProps) {
             return;
         }
 
-        const data : ApiResponse = res?.data
+        try {
+            const data : ApiResponse = res?.data
 
-        console.log('Template API response:', {
-            status: data?.status,
-            dataLength: data?.data?.length,
-            message: data?.message
-        });
-        
-        console.log('Template names from API:', data?.data?.map((t: any) => t.name) || []);
+            console.log('Template API response:', {
+                status: data?.status,
+                dataLength: data?.data?.length,
+                message: data?.message
+            });
+            
+            console.log('Template names from API:', data?.data?.map((t: any) => t.name) || []);
 
-        if (data?.data && Array.isArray(data.data)) {
-            console.log(`Processing ${data.data.length} templates for display`);
-            console.log('Raw template data sample:', data.data[0] ? {
-                id: data.data[0].id,
-                name: data.data[0].name,
-                status: data.data[0].status,
-                componentsType: typeof data.data[0].components,
-                isComponentsArray: Array.isArray(data.data[0].components)
-            } : 'No templates');
+            if (data?.data && Array.isArray(data.data)) {
+                console.log(`Processing ${data.data.length} templates for display`);
+                console.log('Raw template data sample:', data.data[0] ? {
+                    id: data.data[0].id,
+                    name: data.data[0].name,
+                    status: data.data[0].status,
+                    componentsType: typeof data.data[0].components,
+                    isComponentsArray: Array.isArray(data.data[0].components)
+                } : 'No templates');
 
-            const processedTemplates = data.data.map((temp: any, index: number) => {
-                try {
-                    // Handle components - could be string, array, or already parsed
-                    if (typeof temp.components === 'string') {
-                        temp.components = JSON.parse(temp.components);
-                    } else if (!Array.isArray(temp.components)) {
+                const processedTemplates = data.data.map((temp: any, index: number) => {
+                    try {
+                        // Handle components - could be string, array, or already parsed
+                        if (typeof temp.components === 'string') {
+                            temp.components = JSON.parse(temp.components);
+                        } else if (!Array.isArray(temp.components)) {
+                            temp.components = [];
+                        }
+                    } catch (e) {
+                        console.warn(`Error parsing components for template ${temp.name}:`, e);
                         temp.components = [];
                     }
-                } catch (e) {
-                    console.warn(`Error parsing components for template ${temp.name}:`, e);
-                    temp.components = [];
-                }
-                return { ...temp };
-            });
+                    return { ...temp };
+                });
 
-            // Only update if data actually changed to prevent infinite loops
-            setData(prevData => {
-                const prevIds = prevData.map(t => t.id).sort().join(',');
-                const newIds = processedTemplates.map(t => t.id).sort().join(',');
-                if (prevIds !== newIds || prevData.length !== processedTemplates.length) {
-                    console.log(`Setting ${processedTemplates.length} templates to state`);
-                    return processedTemplates;
-                }
-                return prevData;
-            });
-        } else {
-            console.log('No templates in response or invalid format');
+                // Only update if data actually changed to prevent infinite loops
+                setData(prevData => {
+                    const prevIds = prevData.map(t => t.id).sort().join(',');
+                    const newIds = processedTemplates.map(t => t.id).sort().join(',');
+                    if (prevIds !== newIds || prevData.length !== processedTemplates.length) {
+                        console.log(`Setting ${processedTemplates.length} templates to state`);
+                        return processedTemplates;
+                    }
+                    return prevData;
+                });
+            } else {
+                console.log('No templates in response or invalid format');
+                setData([]);
+            }
+        } catch (error) {
+            console.error('Error processing template data:', error);
+            toast.error('Error processing template data');
             setData([]);
         }
 
     }, [getData?.data, getData?.error, workspaceId]) // Include error in dependencies
 
     const refresh = () => {
-        mutate(`/api/${workspaceId}/template/get?page=${1}`);
+        if (workspaceId) {
+            mutate(`/api/${workspaceId}/template/get?page=${1}`);
+        }
     };
 
     // const sync = async () => {
@@ -149,6 +173,11 @@ export default function Template(props: IProps) {
     //     setLoading(false)
         
     // }
+
+    // Safety check - don't render if user is invalid
+    if (!user || typeof user !== 'object' || Object.keys(user).length === 0) {
+        return null;
+    }
 
     return (
         <DashboardLayout user={user}>
@@ -189,7 +218,25 @@ export default function Template(props: IProps) {
                 <div className='col-span-2'>
 
                     {
-                        data && data.length > 0 ? (
+                        !workspaceId ? (
+                            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                                <svg 
+                                    className="mx-auto h-12 w-12 text-blue-500" 
+                                    fill="none" 
+                                    viewBox="0 0 24 24" 
+                                    stroke="currentColor"
+                                >
+                                    <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={1} 
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                                    />
+                                </svg>
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">No workspace selected</h3>
+                                <p className="mt-1 text-sm text-gray-500">Please select a workspace to view templates.</p>
+                            </div>
+                        ) : data && data.length > 0 ? (
                             <TemplateTable  
                                 columns={["Name", "Topic", "Message", "Date Added", "Action"]} 
                                 data={data} 
@@ -229,7 +276,7 @@ export default function Template(props: IProps) {
                             </div>
                         )
                     }
-                    </div>
+                </div>
 
                 <div className='flex justify-center'>
                     <ChatPreview components={preview} /> 
