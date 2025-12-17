@@ -23,6 +23,11 @@ app.prepare().then(() => {
       const parsedUrl = parse(req.url, true)
       const { pathname, query } = parsedUrl
 
+      // Custom domain support: The middleware handles domain detection
+      // This server will accept requests from any domain configured in DNS
+      // The middleware (src/middleware.ts) will detect custom domains and
+      // pass them to getResellerInfo functions for reseller lookup
+
       if (pathname === '/a') {
         await app.render(req, res, '/a', query)
       } else if (pathname === '/b') {

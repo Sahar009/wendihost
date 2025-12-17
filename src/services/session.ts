@@ -233,19 +233,58 @@ export const getResellerInfo = async(req?: IncomingMessage) => {
 
   const host = req?.headers.host
 
-  const subdomain = String(host).split(".")?.[0]; 
-
-  const restricted = ["www", "wendi", "app"]
-
-  if (restricted.includes(subdomain)) {
+  if (!host) {
     return JSON.stringify(null)
   }
 
-  const reseller = await prisma.reseller.findUnique({
-    where: {
-      subdomain: subdomain,
+  // Check if it's a custom domain (not wendi.app)
+  const isCustomDomain = !host.includes('wendi.app') && !host.includes('localhost') && !host.includes('127.0.0.1');
+  
+  let reseller = null;
+
+  if (isCustomDomain) {
+    // Look up by custom domain
+    reseller = await prisma.reseller.findUnique({
+      where: {
+        domain: host,
+      }
+    })
+  } else {
+    // Look up by subdomain (e.g., devy.wendi.app -> devy)
+    const hostParts = String(host).split(".");
+    let subdomain = hostParts[0];
+    
+    // Handle cases like www.devy.wendi.app or devy.wendi.app
+    // If we have more than 2 parts before the domain, take the first non-restricted one
+    const restricted = ["www", "wendi", "app", "localhost", "127"]
+    
+    // If first part is restricted and we have more parts, try the next one
+    if (restricted.includes(subdomain.toLowerCase()) && hostParts.length > 2) {
+      subdomain = hostParts[1];
     }
-  })
+
+    if (restricted.includes(subdomain.toLowerCase())) {
+      console.log('Subdomain is restricted:', subdomain);
+      return JSON.stringify(null)
+    }
+
+    console.log('Looking up subdomain:', subdomain, 'from host:', host);
+
+    // Case-insensitive lookup - get all resellers and filter
+    const allResellers = await prisma.reseller.findMany()
+    
+    console.log('Found resellers with subdomains:', allResellers.filter(r => r.subdomain).map(r => r.subdomain));
+    
+    reseller = allResellers.find(r => 
+      r.subdomain && r.subdomain.toLowerCase() === subdomain.toLowerCase()
+    ) || null
+
+    if (!reseller) {
+      console.log('No reseller found for subdomain:', subdomain);
+    } else {
+      console.log('Found reseller:', reseller.id, reseller.subdomain);
+    }
+  }
 
   return JSON.stringify(reseller)
 
@@ -255,19 +294,47 @@ export const getResellerInfoApi = async(req?: IncomingMessage) => {
 
   const host = req?.headers.host
 
-  const subdomain = String(host).split(".")?.[0]; 
-
-  const restricted = ["www", "wendi", "app"]
-
-  if (restricted.includes(subdomain)) {
+  if (!host) {
     return null
   }
 
-  const reseller = await prisma.reseller.findUnique({
-    where: {
-      subdomain: subdomain,
+  // Check if it's a custom domain (not wendi.app)
+  const isCustomDomain = !host.includes('wendi.app') && !host.includes('localhost') && !host.includes('127.0.0.1');
+  
+  let reseller = null;
+
+  if (isCustomDomain) {
+    // Look up by custom domain
+    reseller = await prisma.reseller.findUnique({
+      where: {
+        domain: host,
+      }
+    })
+  } else {
+    // Look up by subdomain (e.g., devy.wendi.app -> devy)
+    const hostParts = String(host).split(".");
+    let subdomain = hostParts[0];
+    
+    // Handle cases like www.devy.wendi.app or devy.wendi.app
+    // If we have more than 2 parts before the domain, take the first non-restricted one
+    const restricted = ["www", "wendi", "app", "localhost", "127"]
+    
+    // If first part is restricted and we have more parts, try the next one
+    if (restricted.includes(subdomain.toLowerCase()) && hostParts.length > 2) {
+      subdomain = hostParts[1];
     }
-  })
+
+    if (restricted.includes(subdomain.toLowerCase())) {
+      return null
+    }
+
+    // Case-insensitive lookup - get all resellers and filter
+    const allResellers = await prisma.reseller.findMany()
+    
+    reseller = allResellers.find(r => 
+      r.subdomain && r.subdomain.toLowerCase() === subdomain.toLowerCase()
+    ) || null
+  }
 
   console.log("RESELLER")
   console.log(reseller)

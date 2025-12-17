@@ -2,6 +2,7 @@ import { PROJECT_NAME } from "@/libs/constants";
 import Head from "next/head";
 import Link from "next/link";
 import React, { ReactNode } from "react";
+import Image from "next/image";
 
 interface IProps {
     children: ReactNode;
@@ -20,8 +21,20 @@ const AuthLayout = (props: IProps) => {
             
             <header className="py-6 px-6">
                 <div className="container mx-auto flex justify-center">
-                <Link href="/" className="text-5xl font-paytone text-[#0072E9] p-t2">
-                        {reseller?.logoText || PROJECT_NAME || 'Wendi'}
+                    <Link href="/" className="flex items-center gap-3">
+                        {reseller?.logo ? (
+                            <div className="relative w-12 h-12">
+                                <Image 
+                                    src={reseller.logo} 
+                                    alt={reseller?.logoText || PROJECT_NAME || 'Wendi'} 
+                                    fill
+                                    className="object-contain"
+                                />
+                            </div>
+                        ) : null}
+                        <span className="text-5xl font-paytone text-[#0072E9] p-t2">
+                            {reseller?.logoText || PROJECT_NAME || 'Wendi'}
+                        </span>
                     </Link>
                 </div>
             </header>

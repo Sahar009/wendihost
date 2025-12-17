@@ -13,7 +13,7 @@ export default withIronSessionApiRoute(
 
         try {
 
-            const { domain, subdomain, name  } = req.body
+            const { domain, subdomain, name, logo  } = req.body
 
             const user = await validateUserApiNoWorkspace(req)
 
@@ -27,39 +27,70 @@ export default withIronSessionApiRoute(
                 }
             })
 
-            console.log(data, reseller)
+            console.log('Update request:', { domain, subdomain, name, logo, resellerId: reseller?.id })
+
+            const updateData: any = {
+                domain: domain?.trim() || '',
+                subdomain: subdomain?.trim() || '',
+                logoText: name?.trim() || ''
+            }
+
+            // Only update logo if provided (not undefined)
+            if (logo !== undefined && logo !== null) {
+                updateData.logo = logo;
+            }
 
             if (reseller) {
-                await prisma.reseller.update({
-                    where: {
-                        id: reseller.id
-                    },
-                    data: {
-                        domain: domain,
-                        subdomain:subdomain,
-                        logoText: name
+                // Update existing reseller
+                try {
+                    await prisma.reseller.update({
+                        where: {
+                            id: reseller.id
+                        },
+                        data: updateData
+                    })
+                    console.log('Reseller updated successfully')
+                } catch (updateError: any) {
+                    console.error('Update error:', updateError)
+                    // Handle unique constraint errors
+                    if (updateError.code === 'P2002') {
+                        const field = updateError.meta?.target?.[0] || 'field'
+                        return new ServerError(res, 400, `${field === 'domain' ? 'Domain' : field === 'subdomain' ? 'Subdomain' : 'Field'} already exists. Please choose a different one.`)
                     }
-                })
+                    throw updateError
+                }
             } else {
-                await prisma.reseller.create({
-                    data: {
-                        userId: data.id,
-                        domain: domain,
-                        subdomain:subdomain,
-                        logoText: name
+                // Create new reseller
+                try {
+                    await prisma.reseller.create({
+                        data: {
+                            userId: data.id,
+                            ...updateData
+                        }
+                    })
+                    console.log('Reseller created successfully')
+                } catch (createError: any) {
+                    console.error('Create error:', createError)
+                    // Handle unique constraint errors
+                    if (createError.code === 'P2002') {
+                        const field = createError.meta?.target?.[0] || 'field'
+                        return new ServerError(res, 400, `${field === 'domain' ? 'Domain' : field === 'subdomain' ? 'Subdomain' : 'Field'} already exists. Please choose a different one.`)
                     }
-                })
+                    throw createError
+                }
             }
 
             return res.send({ 
                 status: 'success', 
                 statusCode: 200,
-                message: "Updated successfully",
+                message: reseller ? "Updated successfully" : "Created successfully",
                 data: null
             });
             
-        } catch (e) {
-            return new ServerError(res,  400, "Bad Request")
+        } catch (e: any) {
+            console.error('API Error:', e)
+            const errorMessage = e?.message || 'Bad Request'
+            return new ServerError(res, 400, errorMessage)
         }
 
     },
