@@ -150,7 +150,7 @@ const ResellerSettings = () => {
                 </div>
               </div>
               <p className="text-xs text-gray-600 mt-2">
-                DNS changes can take 1-48 hours to propagate. You'll also need a wildcard SSL certificate for HTTPS.
+                DNS changes can take 1-48 hours to propagate. You&apos;ll also need a wildcard SSL certificate for HTTPS.
               </p>
             </div>
             <p className="mb-2 max-w-md">
