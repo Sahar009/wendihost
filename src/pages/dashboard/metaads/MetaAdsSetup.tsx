@@ -5,6 +5,7 @@ import LoadingButton from '@/components/utils/LoadingButton';
 import { FACEBOOK_CONFIG_ID } from '@/libs/constants';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { Check, AlertTriangle, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 export default function MetaAdsSetup() {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -44,7 +45,7 @@ export default function MetaAdsSetup() {
       });
 
       if (response.data.status === 'success') {
-        console.log('✅ Connection response:', {
+        console.log('Connection response:', {
           workspace: response.data.data?.workspace,
           fbUserId: response.data.data?.fbUserId,
           facebookPageId: response.data.data?.facebookPageId,
@@ -53,7 +54,7 @@ export default function MetaAdsSetup() {
         
         // Update workspace in Redux with the new connection data
         if (response.data.data?.workspace) {
-          console.log('📦 Updating Redux with workspace:', response.data.data.workspace);
+          console.log('Updating Redux with workspace:', response.data.data.workspace);
           dispatch(setCurrentWorkspace(response.data.data.workspace));
           
           // Check if we got the required data
@@ -78,7 +79,7 @@ export default function MetaAdsSetup() {
             }, 1500);
           } else {
             toast.warning(response.data.message || 'Connected, but some data may be missing.');
-            console.warn('⚠️ Missing data:', {
+            console.warn('Missing data:', {
               hasFbUserId,
               hasFacebookPageId,
               workspace: response.data.data.workspace
@@ -86,16 +87,16 @@ export default function MetaAdsSetup() {
           }
         } else {
           // Fallback: fetch the updated workspace from the API
-          console.log('🔄 Fetching workspace from API...');
+          console.log('Fetching workspace from API...');
           try {
             const workspaceRes = await axios.get(`/api/${currentWorkspace.id}/workspace`);
             if (workspaceRes.data.status === 'success' && workspaceRes.data.data) {
-              console.log('📦 Updating Redux with fetched workspace:', workspaceRes.data.data);
+              console.log('Updating Redux with fetched workspace:', workspaceRes.data.data);
               dispatch(setCurrentWorkspace(workspaceRes.data.data));
               toast.success('Facebook account connected successfully for Meta Ads!');
             }
           } catch (fetchError) {
-            console.error('❌ Error fetching updated workspace:', fetchError);
+            console.error('Error fetching updated workspace:', fetchError);
             toast.error('Connected but failed to refresh. Please reload the page.');
           }
         }
@@ -149,21 +150,31 @@ export default function MetaAdsSetup() {
             <div className="font-semibold mb-1">Connect your Facebook account for Meta Ads</div>
             <div className="text-gray-500 text-sm mb-2">
               {isMetaAdsConnected 
-                ? 'Facebook account is connected for Meta Ads ✓' 
+                ? (
+                  <span className="flex items-center gap-1">
+                    Facebook account is connected for Meta Ads
+                    <Check className="w-4 h-4 text-green-600" />
+                  </span>
+                )
                 : 'Connect your Facebook account with page permissions to create and manage Meta Ads'
               }
             </div>
             {!isMetaAdsConnected && currentWorkspace?.accessToken && (
-              <div className="text-amber-600 text-xs mt-1">
-                ⚠️ You have WhatsApp connected, but need to connect Facebook separately for Meta Ads with page permissions
+              <div className="text-amber-600 text-xs mt-1 flex items-start gap-1">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>You have WhatsApp connected, but need to connect Facebook separately for Meta Ads with page permissions</span>
               </div>
             )}
             {!isMetaAdsConnected && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2 text-xs">
-                <div className="font-semibold text-blue-900 mb-1">📋 Required Permissions:</div>
+                <div className="font-semibold text-blue-900 mb-1 flex items-center gap-1">
+                  <ClipboardList className="w-4 h-4" />
+                  Required Permissions:
+                </div>
                 <ul className="list-disc list-inside text-blue-800 space-y-1">
                   <li><code className="bg-blue-100 px-1 rounded">pages_show_list</code> - To list your Facebook pages</li>
                   <li><code className="bg-blue-100 px-1 rounded">ads_management</code> - To create and manage ads</li>
+                  <li><code className="bg-blue-100 px-1 rounded">ads_read</code> - To read ad templates and creatives</li>
                   <li><code className="bg-blue-100 px-1 rounded">pages_read_engagement</code> - To read page engagement data</li>
                 </ul>
                 <div className="mt-2 text-blue-700">
@@ -171,7 +182,7 @@ export default function MetaAdsSetup() {
                   <ol className="list-decimal list-inside space-y-1 mt-1">
                     <li>Go to <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com/apps</a></li>
                     <li>Select your app → <strong>Permissions</strong> → <strong>Add Permissions</strong></li>
-                    <li>Add <code className="bg-blue-100 px-1 rounded">pages_show_list</code> permission</li>
+                    <li>Add required permissions: <code className="bg-blue-100 px-1 rounded">pages_show_list</code>, <code className="bg-blue-100 px-1 rounded">ads_management</code>, <code className="bg-blue-100 px-1 rounded">ads_read</code></li>
                     <li>Submit for review if required (some permissions need Facebook approval)</li>
                     <li>Try connecting again after permissions are approved</li>
                   </ol>
@@ -229,7 +240,12 @@ export default function MetaAdsSetup() {
             <div className="font-semibold mb-1">Link WhatsApp Number</div>
             <div className="text-gray-500 text-sm mb-2">
               {isWhatsAppConnected 
-                ? 'WhatsApp is connected ✓' 
+                ? (
+                  <span className="flex items-center gap-1">
+                    WhatsApp is connected
+                    <Check className="w-4 h-4 text-green-600" />
+                  </span>
+                )
                 : 'Link your WhatsApp business number with selected Facebook page to receive messages directly over WhatsApp'
               }
             </div>
@@ -263,7 +279,7 @@ export default function MetaAdsSetup() {
         {isMetaAdsConnected && isWhatsAppConnected && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
               <span className="text-green-800 font-medium">Setup Complete</span>
             </div>
             <p className="text-green-700 text-sm mt-1">

@@ -113,6 +113,19 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
   const [availablePages, setAvailablePages] = useState<Array<{id: string; name: string; category?: string}>>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   
+  // Template state
+  const [templates, setTemplates] = useState<Array<{
+    id: string;
+    name: string;
+    message: string;
+    imageUrl: string;
+    callToAction: string;
+    link: string;
+  }>>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  
   // Page verification state
   const [isVerifyingPage, setIsVerifyingPage] = useState(false);
   const [pageVerificationStatus, setPageVerificationStatus] = useState<'idle' | 'verifying' | 'verified' | 'error'>('idle');
@@ -156,6 +169,57 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
       fetchPages();
     }
   }, [workspace?.accessToken, workspaceId, workspace?.facebookPageId, setPageId]);
+
+  // Fetch Facebook templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (!workspace?.accessToken || !workspaceId || !workspace?.fbUserId) return;
+      
+      setIsLoadingTemplates(true);
+      try {
+        const response = await fetch(`/api/${workspaceId}/metaads/templates`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && data.data) {
+            setTemplates(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
+
+    if (workspace?.accessToken && workspace?.fbUserId) {
+      fetchTemplates();
+    }
+  }, [workspace?.accessToken, workspace?.fbUserId, workspaceId]);
+
+  // Handle template selection
+  const handleTemplateSelect = (template: typeof templates[0]) => {
+    setSelectedTemplate(template.id);
+    setAdText(template.message);
+    if (template.imageUrl) {
+      setMediaUrl(template.imageUrl);
+    }
+    if (template.callToAction) {
+      const ctaMapping: Record<string, string> = {
+        'LEARN_MORE': 'Learn More',
+        'SHOP_NOW': 'Shop Now',
+        'SIGN_UP': 'Sign Up',
+        'CONTACT_US': 'Contact Us',
+        'SEND_WHATSAPP_MESSAGE': 'Send WhatsApp Message',
+        'GET_HELP': 'Get Help',
+        'SEND_MESSAGE': 'Send WhatsApp Message'
+      };
+      const mappedCta = ctaMapping[template.callToAction] || currentCTAs[0];
+      if (currentCTAs.includes(mappedCta)) {
+        setCta(mappedCta);
+      }
+    }
+    setShowTemplates(false);
+  };
 
   // Auto-fill pageId from workspace if available
   useEffect(() => {
@@ -427,6 +491,68 @@ const CreateMetaAd: React.FC<CreateMetaAdProps> = ({
             </div>
           </div>
         </div>
+        {/* Template Selection */}
+        {adType === 'facebook' && templates.length > 0 && (
+          <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 mb-4 border border-purple-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg text-gray-900 flex items-center gap-2">
+                <span className="w-1 h-6 bg-purple-500 rounded-full"></span>
+                Use a Template (Optional)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+              >
+                {showTemplates ? 'Hide Templates' : 'Browse Templates'}
+                <svg className={`w-4 h-4 transition-transform ${showTemplates ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            {showTemplates && (
+              <div className="space-y-3">
+                {isLoadingTemplates ? (
+                  <div className="flex items-center justify-center py-8">
+                    <svg className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                    {templates.map((template) => (
+                      <div
+                        key={template.id}
+                        onClick={() => handleTemplateSelect(template)}
+                        className={`cursor-pointer border-2 rounded-lg p-4 transition-all hover:shadow-md ${
+                          selectedTemplate === template.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-primary/50'
+                        }`}
+                      >
+                        {template.imageUrl && (
+                          <img
+                            src={template.imageUrl}
+                            alt={template.name}
+                            className="w-full h-32 object-cover rounded-md mb-3"
+                          />
+                        )}
+                        <h4 className="font-semibold text-sm text-gray-900 mb-1">{template.name}</h4>
+                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">{template.message}</p>
+                        {template.callToAction && (
+                          <span className="inline-block text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                            {template.callToAction}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {/* Ad Content */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 mb-4 border border-gray-200 shadow-sm">
           <h3 className="font-semibold text-lg text-gray-900 mb-2 flex items-center gap-2">
