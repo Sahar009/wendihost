@@ -49,10 +49,12 @@ export default withIronSessionApiRoute(
     
         };
         
-        return new ServerError(res, 400, "Email or Password is incorrect")
+        new ServerError(res, 400, "Email or Password is incorrect")
+        return
 
     } catch (e) {
-        return new ServerError(res, 400, "Email or Password is incorrect")
+        new ServerError(res, 400, "Email or Password is incorrect")
+        return
     }
 
   },

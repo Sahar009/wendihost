@@ -70,7 +70,8 @@ export default withIronSessionApiRoute(
         });
         
     } catch (e) {
-        return new ServerError(res,  400, "Email already exists please login")
+        new ServerError(res,  400, "Email already exists please login")
+        return
     }
 
   },
