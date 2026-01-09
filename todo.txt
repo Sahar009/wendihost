@@ -1,0 +1,26 @@
+Complete Lead Generation System Implementation Plan
+Phase 1: Foundation (High Priority)
+Update Prisma schema - Add LeadCampaign, Lead, OutreachLog, LandingPage, FormSubmission models
+Create database migration - Run Prisma migration for new tables
+Set up folder structure - Create leadgen directories in pages/api and pages/dashboard
+Create Google Places API scraper service - Build service to fetch business data
+Phase 2: Backend API (Medium Priority)
+Lead scraping API endpoints - /api/[workspaceId]/leadgen/scrape-places.ts
+Campaign management API - CRUD operations for campaigns
+Lead management API - CRUD operations for leads
+Form builder API - Create and manage landing pages/forms
+Phase 3: Frontend Dashboard (Medium Priority)
+Main Lead Gen dashboard - Overview page with stats
+Campaign pages - List and create campaigns
+Lead management pages - View, edit, and track leads
+Google Places scraper UI - Search interface
+Form builder interface - Drag-and-drop form creation
+Phase 4: Integration & Public Pages (Medium Priority)
+Public landing pages - /f/[slug].tsx for form submissions
+WhatsApp integration - Connect leads to existing WhatsApp system
+Phase 5: Advanced Features (Low Priority)
+Lead analytics - Track conversion rates, response times
+CSV import/export - Bulk lead management
+Email notifications - Alert on form submissions
+Analytics dashboard - Visual reports and metrics
+Bulk messaging - Send to multiple leads at once

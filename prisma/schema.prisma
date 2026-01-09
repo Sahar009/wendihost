@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -64,6 +64,30 @@ enum AdStatus {
   FAILED
 }
 
+enum LeadSource {
+  GOOGLE_PLACES
+  MANUAL_IMPORT
+  FORM_SUBMISSION
+  API
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  CONVERTED
+  INVALID
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
 model User {
   id              Int              @id @default(autoincrement())
   email           String           @unique
@@ -84,6 +108,7 @@ model User {
   campaigns       Campaign[]       @relation("UserCampaigns")
   metaAds         MetaAd[]
   whatsAppWidgets WhatsAppWidget[]
+  leadCampaigns   LeadCampaign[]
   createdAt       DateTime         @default(now()) @map(name: "created_at")
   updatedAt       DateTime         @updatedAt @map(name: "updated_at")
 }
@@ -125,6 +150,11 @@ model Workspace {
   whatsappLinkClicks WhatsappLinkClick[]
   automationSettings AutomationSettings?
   responseMaterials  ResponseMaterial[]
+  leadCampaigns      LeadCampaign[]
+  leads              Lead[]
+  outreachLogs       OutreachLog[]
+  landingPages       LandingPage[]
+  formSubmissions    FormSubmission[]
   createdAt          DateTime            @default(now()) @map(name: "created_at")
   updatedAt          DateTime            @updatedAt @map(name: "updated_at")
 }
@@ -391,24 +421,23 @@ model Reseller {
   updatedAt    DateTime @updatedAt @map(name: "updated_at")
 }
 
-
 model WhatsAppWidget {
-  id              String        @id @default(uuid())
+  id              String         @id @default(uuid())
   name            String
   phoneNumber     String
   message         String
-  position        String        @default("right")
-  bottom          Int           @default(20)
-  backgroundColor String        @default("#25D366")
-  textColor       String        @default("#FFFFFF")
-  icon            String        @default("whatsapp")
-  widgetCode      String        @unique
+  position        String         @default("right")
+  bottom          Int            @default(20)
+  backgroundColor String         @default("#25D366")
+  textColor       String         @default("#FFFFFF")
+  icon            String         @default("whatsapp")
+  widgetCode      String         @unique
   userId          Int
   workspaceId     Int
-  isActive        Boolean       @default(true)
+  isActive        Boolean        @default(true)
   conversations   Conversation[] @relation("WidgetConversations")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   user      User      @relation(fields: [userId], references: [id])
   workspace Workspace @relation(fields: [workspaceId], references: [id])
@@ -458,30 +487,213 @@ model MetaAd {
 }
 
 model AutomationSettings {
-  id            Int      @id @default(autoincrement())
-  workspaceId  Int      @unique
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
-  
+  id          Int       @id @default(autoincrement())
+  workspaceId Int       @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   // Working Hours
-  holidayMode  Boolean  @default(false)
-  workingHours Json     @default("[]") // Store as JSON array
-  
+  holidayMode  Boolean @default(false)
+  workingHours Json    @default("[]") // Store as JSON array
+
   // Automation Rules
-  automationRules Json  @default("[]") // Store as JSON array
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  automationRules Json @default("[]") // Store as JSON array
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ResponseMaterial {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
-  content     String   @db.Text
-  type        String   // welcome, out-of-hours, no-agent, fallback, follow-up, out-of-office
+  content     String    @db.Text
+  type        String // welcome, out-of-hours, no-agent, fallback, follow-up, out-of-office
   workspaceId Int
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@unique([workspaceId, type])
+}
+
+// Lead Generation Campaign
+model LeadCampaign {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  status      CampaignStatus @default(DRAFT)
+
+  // Scraping Configuration
+  businessType String?
+  location     String?
+  radius       Int?
+  maxResults   Int     @default(50)
+
+  // Campaign Settings
+  messageTemplate String?      @db.Text
+  formUrl         String?
+  landingPageId   Int?
+  landingPage     LandingPage? @relation(fields: [landingPageId], references: [id])
+
+  // Tracking
+  totalLeads Int @default(0)
+  contacted  Int @default(0)
+  responded  Int @default(0)
+  converted  Int @default(0)
+
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+
+  leads        Lead[]
+  outreachLogs OutreachLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+// Individual Lead
+model Lead {
+  id Int @id @default(autoincrement())
+
+  // Business Information
+  businessName String
+  phoneNumber  String
+  email        String?
+  address      String?
+  website      String?
+  rating       Float?
+  reviewCount  Int?
+
+  // Google Places Data
+  placeId       String?
+  googleMapsUrl String?
+  businessType  String?
+
+  // Lead Management
+  source LeadSource @default(GOOGLE_PLACES)
+  status LeadStatus @default(NEW)
+  notes  String?    @db.Text
+  tags   String[]   @default([])
+
+  // Custom Fields
+  customData Json? @db.Json
+
+  // Campaign Association
+  campaignId Int?
+  campaign   LeadCampaign? @relation(fields: [campaignId], references: [id])
+
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  outreachLogs    OutreachLog[]
+  formSubmissions FormSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([phoneNumber, workspaceId])
+  @@index([workspaceId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+// Track outreach attempts
+model OutreachLog {
+  id Int @id @default(autoincrement())
+
+  leadId Int
+  lead   Lead @relation(fields: [leadId], references: [id])
+
+  campaignId Int?
+  campaign   LeadCampaign? @relation(fields: [campaignId], references: [id])
+
+  // Message Details
+  messageType    String
+  messageContent String  @db.Text
+  messageId      String?
+
+  // Status
+  status       String
+  errorMessage String?
+
+  // Response tracking
+  responded    Boolean   @default(false)
+  responseTime DateTime?
+
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([campaignId])
+}
+
+// Landing Page / Form Builder
+model LandingPage {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  // Page Content
+  title           String
+  description     String? @db.Text
+  logoUrl         String?
+  backgroundColor String  @default("#ffffff")
+  primaryColor    String  @default("#4F46E5")
+
+  // Form Configuration
+  formFields       Json   @db.Json
+  submitButtonText String @default("Submit")
+  thankYouMessage  String @default("Thank you for your interest!")
+
+  // Tracking
+  views       Int @default(0)
+  submissions Int @default(0)
+
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  campaigns       LeadCampaign[]
+  formSubmissions FormSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([slug])
+}
+
+// Form Submissions
+model FormSubmission {
+  id Int @id @default(autoincrement())
+
+  landingPageId Int
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id])
+
+  leadId Int?
+  lead   Lead? @relation(fields: [leadId], references: [id])
+
+  // Submission Data
+  formData    Json    @db.Json
+  phoneNumber String?
+  email       String?
+
+  // Tracking
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([landingPageId])
+  @@index([leadId])
+  @@index([workspaceId])
 }

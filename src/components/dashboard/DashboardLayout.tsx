@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getAllWorkspace, getCurrentWorkspace, setAllWorkspace, setCurrentWorkspace } from "@/store/slices/system";
 import ModalWrapper from "../utils/ModalWrapper";
 import CreateWorkspace from "./CreateWorkspace";
-import { BookUser, BotMessageSquare, LayoutDashboard, LayoutTemplate, Link2, MessageCircleMore, UserRoundPlus } from "lucide-react";
+import { BookUser, BotMessageSquare, LayoutDashboard, LayoutTemplate, Link2, MessageCircleMore, UserRoundPlus, Target } from "lucide-react";
 import { Facebook } from "lucide-react";
 import { FolderGit } from "lucide-react";
 
@@ -60,6 +60,11 @@ const navs: NAV[] = [
         name: "Meta Ads",
         icon: <Facebook  className="text-gray-600 group-hover:text-white" size={18} />, 
         link: DASHBOARD_ROUTES.METAADS
+    },
+    {
+        name: "Lead Generation",
+        icon: <Target className="text-gray-600 group-hover:text-white" size={18} />, 
+        link: DASHBOARD_ROUTES.LEADGEN
     },
     {
         name: "Reseller & Whitelabel",

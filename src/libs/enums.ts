@@ -21,6 +21,7 @@ export enum DASHBOARD_ROUTES {
     LOGOUT = "/dashboard/logout",
     METAADS = "/dashboard/metaads",
     AUTOMATIONS = "/dashboard/automations",
+    LEADGEN = "/dashboard/leadgen",
 }
 
 
