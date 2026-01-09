@@ -38,7 +38,7 @@ const prebuiltTemplates = [
     name: 'Business Inquiry',
     description: 'Perfect for collecting business inquiries and service requests',
     category: 'Business',
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#3B82F6',
     fields: [
       { label: 'Full name', type: 'text', required: true, placeholder: 'Enter your full name' },
@@ -54,7 +54,7 @@ const prebuiltTemplates = [
     name: 'Register for Event',
     description: 'Collect registrations for events, webinars, and conferences',
     category: 'Events',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#EF4444',
     fields: [
       { label: 'Full name', type: 'text', required: true, placeholder: 'Enter your name' },
@@ -69,7 +69,7 @@ const prebuiltTemplates = [
     name: 'Restaurant Booking',
     description: 'Take table reservations and special requests',
     category: 'Hospitality',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#F59E0B',
     fields: [
       { label: 'Full name', type: 'text', required: true, placeholder: 'Your name' },
@@ -86,7 +86,7 @@ const prebuiltTemplates = [
     name: 'Voting poll',
     description: 'Create polls and surveys to gather opinions',
     category: 'Survey',
-    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#10B981',
     fields: [
       { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Your contact' },
@@ -99,7 +99,7 @@ const prebuiltTemplates = [
     name: 'Conference Registration',
     description: 'Register attendees for conferences and workshops',
     category: 'Events',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#6366F1',
     fields: [
       { label: 'Full name', type: 'text', required: true, placeholder: 'Enter your name' },
@@ -114,7 +114,7 @@ const prebuiltTemplates = [
     name: 'Register for our course',
     description: 'Enroll students in courses and training programs',
     category: 'Education',
-    image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&h=300&fit=crop',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
     primaryColor: '#EF4444',
     fields: [
       { label: 'Full name', type: 'text', required: true, placeholder: 'Your full name' },

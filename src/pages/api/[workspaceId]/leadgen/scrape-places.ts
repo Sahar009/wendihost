@@ -26,14 +26,20 @@ export default withIronSessionApiRoute(
       const { workspaceId } = req.query;
       const { businessType, location, radius, maxResults, campaignId } = req.body;
 
+      console.log('Scrape-Places API - Session:', (req.session as any)?.user);
+      console.log('Scrape-Places API - WorkspaceId:', workspaceId);
+      
       if (!businessType || !location) {
         return new ServerError(res, 400, 'Business type and location are required');
       }
 
       const validatedInfo = await validateUserApi(req, Number(workspaceId));
       if (!validatedInfo) {
+        console.log('Scrape-Places API - Validation failed');
         return new ServerError(res, 401, 'Unauthorized');
       }
+      
+      console.log('Scrape-Places API - Validation successful:', validatedInfo.user.email);
 
       const { user, workspace } = validatedInfo;
 

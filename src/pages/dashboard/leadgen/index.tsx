@@ -73,21 +73,21 @@ function LeadGenDashboard(props: IProps) {
       title: 'Active Campaigns',
       value: stats.activeCampaigns,
       icon: Target,
-      color: 'bg-green-500',
+      color: 'bg-blue-500',
       link: '/dashboard/leadgen/campaigns',
     },
     {
       title: 'Contacted',
       value: stats.totalContacted,
       icon: FileText,
-      color: 'bg-purple-500',
+      color: 'bg-blue-500',
       link: '/dashboard/leadgen/leads',
     },
     {
       title: 'Conversion Rate',
       value: `${stats.conversionRate}%`,
       icon: TrendingUp,
-      color: 'bg-orange-500',
+      color: 'bg-blue-500',
       link: '/dashboard/leadgen/campaigns',
     },
   ];
@@ -102,7 +102,7 @@ function LeadGenDashboard(props: IProps) {
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
             onClick={() => router.push('/dashboard/leadgen/submissions')}
-            className="bg-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="bg-primary text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Mail className="w-4 h-4" />
             <span className="hidden sm:inline">Form Submissions</span>

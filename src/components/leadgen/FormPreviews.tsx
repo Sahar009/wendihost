@@ -34,7 +34,7 @@ export const BusinessInquiryPreview: React.FC<FormPreviewProps> = ({
       {/* Background Image */}
       <div className="relative h-48">
         <img
-          src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=400&fit=crop"
+          src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
           alt="Business Inquiry"
           className="w-full h-full object-cover"
         />
@@ -130,7 +130,7 @@ export const EventRegistrationPreview: React.FC<FormPreviewProps> = ({
       {/* Background Image */}
       <div className="relative h-48">
         <img
-          src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop"
+          src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
           alt="Event Registration"
           className="w-full h-full object-cover"
         />
@@ -209,7 +209,7 @@ export const RestaurantBookingPreview: React.FC<FormPreviewProps> = ({
       {/* Background Image */}
       <div className="relative h-48">
         <img
-          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop"
+          src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
           alt="Restaurant Booking"
           className="w-full h-full object-cover"
         />
@@ -331,7 +331,7 @@ export const VotingPollPreview: React.FC<FormPreviewProps> = ({
       <div className="flex justify-center pt-8">
         <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-md">
           <img
-            src="https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=200&h=200&fit=crop"
+            src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
             alt="Voting Poll"
             className="w-full h-full object-cover"
           />
@@ -420,7 +420,7 @@ export const ConferenceRegistrationPreview: React.FC<FormPreviewProps> = ({
         {/* Background Image */}
         <div className="relative h-48 rounded-t-3xl overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop"
+            src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
             alt="Conference Registration"
             className="w-full h-full object-cover"
           />
@@ -499,7 +499,7 @@ export const CourseRegistrationPreview: React.FC<FormPreviewProps> = ({
       {/* Background Image */}
       <div className="relative h-48">
         <img
-          src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400&fit=crop"
+          src="https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png"
           alt="Course Registration"
           className="w-full h-full object-cover"
         />

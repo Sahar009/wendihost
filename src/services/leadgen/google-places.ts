@@ -113,6 +113,49 @@ class GooglePlacesService {
   }
 
   /**
+   * Get place predictions for autocomplete
+   */
+  async getPlacePredictions(input: string): Promise<any[]> {
+    console.log('getPlacePredictions called with input:', input);
+    console.log('API Key available:', !!this.apiKey);
+    
+    if (!this.apiKey) {
+      console.error('Google Places API key is not configured');
+      throw new Error('Google Places API key is not configured');
+    }
+
+    try {
+      const url = `${this.baseUrl}/autocomplete/json`;
+      const params = {
+        input,
+        key: this.apiKey,
+        types: '(cities)',
+      };
+      
+      console.log('Making request to:', url);
+      console.log('Request params:', { ...params, key: 'HIDDEN' });
+
+      const response = await axios.get(url, { params });
+      
+      console.log('API Response status:', response.data.status);
+      console.log('API Response data:', response.data);
+
+      if (response.data.status !== 'OK' && response.data.status !== 'ZERO_RESULTS') {
+        console.error('Google Places API error:', response.data.status, response.data);
+        throw new Error(`Google Places API error: ${response.data.status}`);
+      }
+
+      const predictions = response.data.predictions || [];
+      console.log('Returning predictions:', predictions);
+      return predictions;
+    } catch (error: any) {
+      console.error('Error getting place predictions:', error);
+      console.error('Error response:', error.response?.data);
+      throw new Error(error.response?.data?.error_message || error.message);
+    }
+  }
+
+  /**
    * Search nearby places using coordinates
    */
   async searchNearby(lat: number, lng: number, type: string, radius: number = 5000): Promise<PlaceResult[]> {

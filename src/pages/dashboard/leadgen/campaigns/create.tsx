@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { getCurrentWorkspace } from '@/store/slices/system';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, MapPin, X } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { withIronSessionSsr } from 'iron-session/next';
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session';
+import GooglePlacesService from '@/services/leadgen/google-places';
 
 export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
   const user = await validateUser(req)
@@ -30,6 +31,11 @@ function CreateCampaign(props: IProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [landingPages, setLandingPages] = useState<any[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const placesService = GooglePlacesService;
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -66,7 +72,79 @@ function CreateCampaign(props: IProps) {
         ? (value ? Number(value) : '') 
         : value,
     }));
+
+    // Handle location autocomplete
+    if (name === 'location') {
+      if (value.length > 2) {
+        fetchLocationSuggestions(value);
+      } else {
+        setLocationSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }
   };
+
+  const fetchLocationSuggestions = async (input: string) => {
+    if (input.length < 3) return;
+    
+    setSuggestionsLoading(true);
+    try {
+      const predictions = await placesService.getPlacePredictions(input);
+      setLocationSuggestions(predictions);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error fetching location suggestions:', error);
+      // Show fallback message instead of hiding suggestions
+      setLocationSuggestions([{
+        place_id: 'fallback',
+        description: 'Type location manually (autocomplete unavailable)',
+        structured_formatting: {
+          main_text: 'Manual Entry',
+          secondary_text: 'Google Places API not configured'
+        }
+      }]);
+      setShowSuggestions(true);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const selectLocation = (prediction: any) => {
+    if (prediction.place_id === 'fallback') {
+      // For fallback, just close suggestions and let user type manually
+      setLocationSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      location: prediction.description
+    }));
+    setLocationSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const clearLocation = () => {
+    setFormData(prev => ({
+      ...prev,
+      location: ''
+    }));
+    setLocationSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationInputRef.current && !locationInputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,14 +275,57 @@ function CreateCampaign(props: IProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Location
                 </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="e.g., Nairobi, Kenya"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
+                <div className="relative" ref={locationInputRef}>
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., Nairobi, Kenya"
+                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    autoComplete="off"
+                  />
+                  {formData.location && (
+                    <button
+                      type="button"
+                      onClick={clearLocation}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  
+                  {/* Autocomplete Suggestions Dropdown */}
+                  {showSuggestions && locationSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {suggestionsLoading ? (
+                        <div className="px-4 py-3 text-gray-500 text-sm">
+                          Loading suggestions...
+                        </div>
+                      ) : (
+                        locationSuggestions.map((prediction, index) => (
+                          <button
+                            key={prediction.place_id || index}
+                            type="button"
+                            onClick={() => selectLocation(prediction)}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-start gap-3"
+                          >
+                            <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {prediction.structured_formatting?.main_text || prediction.description}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {prediction.structured_formatting?.secondary_text || prediction.description}
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
