@@ -10,6 +10,7 @@ import Textarea from "@/components/utils/Textarea";
 import useInput from "@/hooks/useInput";
 import Input from "@/components/auth/Input";
 import { BsThreeDotsVertical } from 'react-icons/bs'
+import QRCodeDisplay from "@/components/utils/QRCodeDisplay";
 
 interface IProps {
     columns: string[],
@@ -103,9 +104,9 @@ const WaLinkTable = (props: IProps) => {
 
     return (
 
-        <div className="overflow-x-auto shadow-md sm:rounded-lg min-h-[65vh]">
+        <div className="overflow-x-auto shadow-lg sm:rounded-lg min-h-[65vh] bg-white">
             <table className="w-full text-sm text-left text-gray-500">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                <thead className="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
                         {/* <th scope="col" className="p-4">
                             <div className="flex items-center">
@@ -116,12 +117,15 @@ const WaLinkTable = (props: IProps) => {
                         {
                             props.columns.map((column: string, index: number) => {
                                 return (
-                                    <th key={index} scope="col" className="px-6 py-3">
+                                    <th key={index} scope="col" className="px-6 py-4 font-semibold text-gray-900">
                                         {column}
                                     </th>
                                 )
                             })
                         }
+                        <th scope="col" className="px-6 py-4 font-semibold text-gray-900">
+                            QR Code
+                        </th>
                        
                     </tr>
                 </thead>
@@ -131,13 +135,35 @@ const WaLinkTable = (props: IProps) => {
                     {
                         props?.data?.map((row, index) => {
                             return (
-                                <tr key={index} className="bg-white border-b  hover:bg-gray-50">
-                                    <td className="px-6 py-4">{row.name}</td>
-                                    <td className="px-6 py-4">+{row.phoneNumber}</td>
-                                    <td className="px-6 py-4">{row.visitors}</td>
-                                    <td className="px-6 py-4">{row.message}</td>
-                                    <td onClick={() =>  copyContent(BASE_LINK + row.name)} className="px-6 py-4 underline cursor-pointer">{BASE_LINK + row.name}</td>
-                                    <td className="px-6 py-4">{dateFormat(row.createdAt)}</td>
+                                <tr key={index} className="bg-white border-b hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{row.name}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            +{row.phoneNumber}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center">
+                                            <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            {row.visitors}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{row.message}</td>
+                                    <td onClick={() =>  copyContent(BASE_LINK + row.name)} className="px-6 py-4 text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium hover:bg-blue-50 rounded transition-all duration-200">{BASE_LINK + row.name}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">{dateFormat(row.createdAt)}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center group">
+                                            <QRCodeDisplay 
+                                                url={BASE_LINK + row.name}
+                                                title={row.name}
+                                                size={60}
+                                                showActions={true}
+                                            />
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 relative">
                                         <div className="inline-block">
                                             <button onClick={() => setDropdownOpen(index)} className="focus:outline-none">

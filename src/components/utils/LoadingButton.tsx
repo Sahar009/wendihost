@@ -54,7 +54,7 @@ const LoadingButton = (props: IProps) => {
                 <button 
                     onClick={onClick}
                     disabled={disabled}
-                    className={`my-2 rounded-lg w-full bg-blue-600 hover:bg-blue-700 py-2 text-white disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-200 ${className}`}> 
+                    className={`my-2 py-2 rounded-lg w-full bg-blue-600 hover:bg-blue-700 py-2 text-white disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:text-gray-200 ${className}`}> 
                     {children}
                 </button>
             )

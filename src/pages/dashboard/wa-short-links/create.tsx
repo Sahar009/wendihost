@@ -17,6 +17,7 @@ import 'react-phone-number-input/style.css'
 import EmojiPicker from 'emoji-picker-react';
 import { getCurrentWorkspace } from '@/store/slices/system'
 import { useSelector } from 'react-redux'
+import { Smile } from 'lucide-react'
 
 export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
 
@@ -57,6 +58,8 @@ export default function CreateTemplate(props: IProps) {
     const isDisabled = name.error ||  message.error || !phone
 
     const [loading, setLoading] = useState(false)
+
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
     useEffect(() => {
         setComponents([
@@ -114,19 +117,34 @@ export default function CreateTemplate(props: IProps) {
 
                         <label htmlFor='textarea' className='block text-gray-950 font-bold my-2 text-lg'> WhatsApp Message </label>
 
-                        <Textarea 
-                            label='Message' name='message' id='message' placeholder='Type your message here' 
-                            helperText={message.errorMessage} value={message.value}
-                            onChange={(value) => message.setValue(value)}
-                            error={message.errorWarning}
-                            onFocus={() => message.setOnFocus(true)} hideLabel={true} />  
+                        <div className="relative">
+                            <Textarea 
+                                label='Message' name='message' id='message' placeholder='Type your message here' 
+                                helperText={message.errorMessage} value={message.value}
+                                onChange={(value) => message.setValue(value)}
+                                error={message.errorWarning}
+                                onFocus={() => message.setOnFocus(true)} hideLabel={true} />  
 
-                        <EmojiPicker 
-                            width={'100%'} 
-                            onEmojiClick={(e) => {
-                                console.log(e)
-                                message.setValue(value => value + e.emoji)
-                            }} />
+                            <button
+                                type="button"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Toggle emoji picker"
+                            >
+                                <Smile className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {showEmojiPicker && (
+                            <div className="mt-2 border border-gray-200 rounded-lg shadow-lg">
+                                <EmojiPicker 
+                                    width={'100%'} 
+                                    onEmojiClick={(e) => {
+                                        console.log(e)
+                                        message.setValue(value => value + e.emoji)
+                                    }} />
+                            </div>
+                        )}
 
                     </div>
 

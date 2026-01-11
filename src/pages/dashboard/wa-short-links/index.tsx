@@ -91,20 +91,24 @@ export default function ShortLinks(props: IProps) {
 
     return (
         <DashboardLayout user={user}>
-            <div className='my-4 flex justify-between items-center gap-4'>
-                {/* Search Bar */}
-                <div className='w-64'>
-                    <input
-                        type='text'
-                        placeholder='Search'
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className='w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 bg-gray-50'
-                    />
+            <div className='my-6 flex justify-between items-center gap-4'>
+                <div className='flex items-center gap-4 flex-1'>
+                    <div className='relative flex-1 max-w-md'>
+                        
+                        <input
+                            type='text'
+                            placeholder='Search short links...'
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm'
+                        />
+                    </div>
                 </div>
-                <div className='w-44'>
-                    <LoadingButton loading={loading} onClick={() => router.push(DASHBOARD_ROUTES.SHORTS + '/create')} color='blue'>
-                        + Create Short Link
+                <div className='flex items-center gap-2'>
+                   
+                    <LoadingButton loading={loading} onClick={() => router.push(DASHBOARD_ROUTES.SHORTS + '/create')} color='blue' className='px-4'>
+                        
+                       + Create Short Link 
                     </LoadingButton>
                 </div>
             </div>
@@ -112,12 +116,21 @@ export default function ShortLinks(props: IProps) {
            
             {filteredData.length === 0 ? (
                 <div className='flex flex-col items-center justify-center h-[60vh]'>
-                    <Image src="/images/link%20icon.png" alt="Short link icon" width={120} height={120} />
-                    <div className='mt-6 text-lg font-medium text-gray-700'>No Short Link Found</div>
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full blur-xl opacity-20 animate-pulse"></div>
+                        <Image src="/images/link%20icon.png" alt="Short link icon" width={120} height={120} className="relative" />
+                    </div>
+                    <div className='mt-6 text-lg font-medium text-gray-700'>No Short Links Found</div>
+                    <p className='mt-2 text-sm text-gray-500 text-center max-w-md'>
+                        Create your first short link to start sharing your WhatsApp contact with QR codes
+                    </p>
                     <button
-                        className='mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition'
+                        className='mt-6 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2'
                         onClick={() => router.push(DASHBOARD_ROUTES.SHORTS + '/create')}
                     >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                         Create Short Link
                     </button>
                 </div>
