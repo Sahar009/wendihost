@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
-import { FaPython, FaNodeJs } from 'react-icons/fa6';
+import React, { useState, useEffect } from 'react';
+import { FaPython, FaNodeJs, FaCopy } from 'react-icons/fa6';
 import CodeBlock from './CodeBlock';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { TestTube, Phone, Trash2, Send, FileText, Code, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { TestTube, Phone, Trash2, Send, FileText, Code, AlertCircle, CheckCircle, XCircle, Key, RefreshCw } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const API_ENDPOINT = "/api/wa-auth";
 
 const Api = () => {
   const [testPhone, setTestPhone] = useState('+2349090909090'); // Pre-filled with test number
   const [testing, setTesting] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  const currentWorkspace = useSelector((state: any) => state.system.current);
+
+  // Fetch API key on component mount
+  useEffect(() => {
+    if (currentWorkspace?.apiKey) {
+      setApiKey(currentWorkspace.apiKey);
+    }
+  }, [currentWorkspace]);
+
+  const generateNewApiKey = async () => {
+    if (!currentWorkspace?.id) return;
+    
+    if (!window.confirm('Generating a new API key will invalidate the previous one. Continue?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(`/api/${currentWorkspace.id}/settings/generate-api-key`);
+      setApiKey(response.data.data.apiKey);
+      toast.success('New API key generated successfully!');
+    } catch (error) {
+      console.error('Error generating API key:', error);
+      toast.error('Failed to generate API key');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
 
   const handleTestOTP = async () => {
     if (!testPhone) {
@@ -46,6 +83,57 @@ const Api = () => {
 
   return (
     <div className="flex flex-col gap-8 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+      {/* API Key Section */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Key className="w-5 h-5" />
+          API Key
+        </h3>
+        
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-3">
+            Your API key provides access to the WhatsApp OTP API. Keep it secure and don't share it publicly.
+          </p>
+          
+          {apiKey ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-50 p-3 rounded-md border border-gray-200 font-mono text-sm overflow-x-auto">
+                {apiKey}
+              </div>
+              <button
+                onClick={() => copyToClipboard(apiKey)}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                title="Copy to clipboard"
+              >
+                <FaCopy className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500 italic">
+              No API key generated yet.
+            </div>
+          )}
+        </div>
+        
+        <button
+          onClick={generateNewApiKey}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Key className="w-4 h-4" />
+              {apiKey ? 'Regenerate API Key' : 'Generate API Key'}
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Test Section */}
       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
