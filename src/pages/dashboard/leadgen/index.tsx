@@ -113,7 +113,7 @@ function LeadGenDashboard(props: IProps) {
             className="bg-primary text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Scrape Leads</span>
+            <span className="hidden sm:inline">Leads Near You </span>
             <span className="sm:hidden">Scrape</span>
           </button>
           <button

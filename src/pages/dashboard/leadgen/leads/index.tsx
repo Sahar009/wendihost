@@ -189,7 +189,7 @@ function LeadsList(props: IProps) {
             onClick={() => router.push('/dashboard/leadgen/scraper')}
             className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
           >
-            Scrape Leads
+            Leads Near You
           </button>
         </div>
       ) : (

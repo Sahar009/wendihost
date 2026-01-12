@@ -10,14 +10,14 @@ import { withIronSessionSsr } from 'iron-session/next';
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session';
 import GooglePlacesService from '@/services/leadgen/google-places';
 
-export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
+export const getServerSideProps = withIronSessionSsr(async ({ req, res }) => {
   const user = await validateUser(req)
   const data = user as any
   if (data?.redirect) return sessionRedirects(data?.redirect)
-  return { 
+  return {
     props: {
       user: JSON.stringify(user),
-    }, 
+    },
   }
 }, sessionCookie())
 
@@ -64,7 +64,7 @@ function LeadScraper(props: IProps) {
 
   const fetchLocationSuggestions = async (input: string) => {
     if (input.length < 3) return;
-    
+
     console.log('Fetching suggestions for:', input);
     setSuggestionsLoading(true);
     try {
@@ -96,7 +96,7 @@ function LeadScraper(props: IProps) {
       setShowSuggestions(false);
       return;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       location: prediction.description
@@ -141,7 +141,7 @@ function LeadScraper(props: IProps) {
 
       if (response.data.status === 'success') {
         const { savedContacts, skippedContacts, totalSaved, totalSkipped } = response.data.data;
-        
+
         toast.success(
           `Successfully saved ${totalSaved} contacts${totalSkipped > 0 ? `. Skipped ${totalSkipped} duplicates.` : ''}`
         );
@@ -195,12 +195,12 @@ function LeadScraper(props: IProps) {
         statusText: error.response?.statusText,
         data: error.response?.data
       });
-      
+
       const errorMessage = error.response?.data?.message || 'Failed to scrape leads';
-      
+
       if (error.response?.status === 401) {
         toast.error('Authentication failed. You may not have access to this workspace.');
-        
+
         // Try to fetch campaigns to see if it's a workspace access issue
         try {
           console.log('Testing workspace access with campaigns API...');
@@ -250,7 +250,7 @@ function LeadScraper(props: IProps) {
         >
           ← Back
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Scrape Leads from Google Places</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Discover New Ready To Pay Business Leads Near You For Your Outreach Campaign</h1>
         <p className="text-gray-600 mt-1">Find businesses in your target location</p>
       </div>
 
@@ -303,7 +303,7 @@ function LeadScraper(props: IProps) {
                     <X className="w-4 h-4" />
                   </button>
                 )}
-                
+
                 {/* Autocomplete Suggestions Dropdown */}
                 {showSuggestions && locationSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
@@ -396,12 +396,15 @@ function LeadScraper(props: IProps) {
               <Target className="w-4 h-4" />
               How it works
             </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• We search Google Places for businesses matching your criteria</li>
-              <li>• Extract contact information (phone, email, address)</li>
-              <li>• Save leads to your workspace automatically</li>
-              <li>• Duplicate leads are automatically skipped</li>
+            <ul className="text-sm text-blue-800 space-y-2">
+              <li>• This is a business lead discovery & outreach tool to help you locate businesses that need your services to help them grow.</li>
+              <li>• Filter leads based on WhatsApp-enabled contacts, or find those with just email or phone number</li>
+              <li>• Save or export leads to your Outreach workspace with the right label</li>
+              <li>• Manually reach out to leads using our built-in template messages to get them into your automation pipeline</li>
             </ul>
+            <p className="mt-3 text-xs text-blue-700 italic">
+              Note: "All contacts shown are publicly available. Outreach must be manual and compliant with WhatsApp policies."
+            </p>
           </div>
         </div>
 
@@ -412,7 +415,7 @@ function LeadScraper(props: IProps) {
           {!results && !loading && (
             <div className="text-center py-12 text-gray-500">
               <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Fill in the form and click &quot;Start Scraping&quot; to find leads</p>
+              <p>Fill in the form and Click "Business Leads Near Me" to find leads ready to pay you to help their business grow</p>
             </div>
           )}
 
