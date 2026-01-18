@@ -9,14 +9,14 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { withIronSessionSsr } from 'iron-session/next';
 import { sessionCookie, sessionRedirects, validateUser } from '@/services/session';
 
-export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
+export const getServerSideProps = withIronSessionSsr(async ({ req, res }) => {
   const user = await validateUser(req)
   const data = user as any
   if (data?.redirect) return sessionRedirects(data?.redirect)
-  return { 
+  return {
     props: {
       user: JSON.stringify(user),
-    }, 
+    },
   }
 }, sessionCookie())
 
@@ -32,6 +32,7 @@ function EditTemplate(props: IProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [template, setTemplate] = useState<any>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     title: '',
@@ -40,13 +41,26 @@ function EditTemplate(props: IProps) {
     backgroundColor: '#ffffff',
     submitButtonText: 'Submit',
     thankYouMessage: 'Thank you for your submission!',
+    whatsappTemplate: '',
   });
 
   useEffect(() => {
     if (currentWorkspace?.id && id) {
       fetchTemplate();
+      fetchTemplates();
     }
   }, [currentWorkspace?.id, id]);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(`/api/${currentWorkspace.id}/template/get?status=APPROVED`);
+      if (response.data.status === 'success') {
+        setTemplates(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
 
   const fetchTemplate = async () => {
     try {
@@ -65,6 +79,7 @@ function EditTemplate(props: IProps) {
           backgroundColor: data.backgroundColor || '#ffffff',
           submitButtonText: data.submitButtonText || 'Submit',
           thankYouMessage: data.thankYouMessage || 'Thank you for your submission!',
+          whatsappTemplate: data.whatsappTemplate || '',
         });
       }
     } catch (error) {
@@ -75,7 +90,7 @@ function EditTemplate(props: IProps) {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -289,6 +304,33 @@ function EditTemplate(props: IProps) {
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  WhatsApp Auto-Reply Template
+                </label>
+                <select
+                  name="whatsappTemplate"
+                  value={formData.whatsappTemplate}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">No auto-reply (or use default: hello_world)</option>
+                  {templates.map(template => (
+                    <option key={template.id} value={template.name}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a WhatsApp template to automatically send when someone submits this form
+                </p>
+                {templates.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    No approved templates available. Create templates in Settings → Templates.
+                  </p>
+                )}
               </div>
             </div>
           </div>

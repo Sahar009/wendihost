@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/libs/prisma';
 import { ApiResponse } from '@/libs/types';
 import ServerError from '@/services/errors/serverError';
+import { sendWhatsAppTemplateMessage } from '@/services/waba/messaging';
 
 interface SubmitFormRequest extends NextApiRequest {
   body: {
@@ -42,13 +43,13 @@ export default async function submitForm(req: SubmitFormRequest, res: NextApiRes
     }
 
     // Get IP and user agent from request
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 
-                      (req.headers['x-real-ip'] as string) || 
-                      req.socket.remoteAddress || 
-                      null;
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket.remoteAddress ||
+      null;
     const userAgent = req.headers['user-agent'] || null;
-    const referrer = Array.isArray(req.headers['referer']) 
-      ? req.headers['referer'][0] 
+    const referrer = Array.isArray(req.headers['referer'])
+      ? req.headers['referer'][0]
       : (req.headers['referer'] || req.headers['referrer'] || null);
 
     // Create form submission
@@ -202,6 +203,27 @@ export default async function submitForm(req: SubmitFormRequest, res: NextApiRes
       } catch (contactError) {
         console.error('Error creating contact from form submission:', contactError);
         // Don't fail the form submission if contact creation fails
+      }
+    }
+
+    // Send WhatsApp template message to the lead
+    if (phoneNumber) {
+      try {
+        // Use the template selected for this form, or fallback to 'hello_world'
+        const templateName = landingPage.whatsappTemplate || 'hello_world';
+
+        await sendWhatsAppTemplateMessage({
+          to: phoneNumber,
+          template: templateName,
+          workspaceId: landingPage.workspaceId,
+          variables: {}, // Add any template variables if needed
+        });
+
+        console.log(`WhatsApp template message sent successfully to: ${phoneNumber} using template: ${templateName}`);
+      } catch (whatsappError: any) {
+        console.error('Error sending WhatsApp message:', whatsappError?.response?.data || whatsappError);
+        // Don't fail the form submission if WhatsApp message fails
+        // This ensures the lead is still captured even if WhatsApp is down or misconfigured
       }
     }
 

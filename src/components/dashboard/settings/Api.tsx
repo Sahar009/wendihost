@@ -13,7 +13,7 @@ const Api = () => {
   const [testing, setTesting] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   const currentWorkspace = useSelector((state: any) => state.system.current);
 
   // Fetch API key on component mount
@@ -25,7 +25,7 @@ const Api = () => {
 
   const generateNewApiKey = async () => {
     if (!currentWorkspace?.id) return;
-    
+
     if (!window.confirm('Generating a new API key will invalidate the previous one. Continue?')) {
       return;
     }
@@ -89,12 +89,12 @@ const Api = () => {
           <Key className="w-5 h-5" />
           API Key
         </h3>
-        
+
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-3">
-            Your API key provides access to the WhatsApp OTP API. Keep it secure and don't share it publicly.
+            Your API key provides access to the WhatsApp OTP API. Keep it secure and don&apos;t share it publicly.
           </p>
-          
+
           {apiKey ? (
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-gray-50 p-3 rounded-md border border-gray-200 font-mono text-sm overflow-x-auto">
@@ -114,7 +114,7 @@ const Api = () => {
             </div>
           )}
         </div>
-        
+
         <button
           onClick={generateNewApiKey}
           disabled={loading}

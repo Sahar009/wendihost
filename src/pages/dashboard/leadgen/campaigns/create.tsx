@@ -31,6 +31,7 @@ function CreateCampaign(props: IProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [landingPages, setLandingPages] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -50,8 +51,20 @@ function CreateCampaign(props: IProps) {
   useEffect(() => {
     if (currentWorkspace?.id) {
       fetchLandingPages();
+      fetchTemplates();
     }
   }, [currentWorkspace?.id]);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(`/api/${currentWorkspace.id}/template/get?status=APPROVED`);
+      if (response.data.status === 'success') {
+        setTemplates(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
 
   const fetchLandingPages = async () => {
     try {
@@ -373,22 +386,32 @@ function CreateCampaign(props: IProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   WhatsApp Message Template
                 </label>
-                <textarea
+                <select
                   name="messageTemplate"
                   value={formData.messageTemplate}
                   onChange={handleChange}
-                  rows={4}
-                  placeholder="Hi {name}, we noticed your business and would love to connect..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
+                >
+                  <option value="">Select a message template</option>
+                  {templates.map(template => (
+                    <option key={template.id} value={template.name}>
+                      {template.name} ({template.status})
+                    </option>
+                  ))}
+                </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Use {'{name}'} for business name placeholder
+                  Select an approved WhatsApp message template to send to leads
                 </p>
+                {templates.length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    No approved templates available. Please create and approve templates first.
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Landing Page (Optional)
+                  Lead Gen Form (Optional)
                 </label>
                 <select
                   name="landingPageId"
@@ -396,22 +419,25 @@ function CreateCampaign(props: IProps) {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                  <option value="">No landing page</option>
+                  <option value="">No form</option>
                   {landingPages.map(page => (
                     <option key={page.id} value={page.id}>
-                      {page.name}
+                      {page.name} - /f/{page.slug}
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a lead gen form to include in the message. The form link will be sent to leads.
+                </p>
                 {landingPages.length === 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    No landing pages available.{' '}
+                  <p className="text-xs text-orange-600 mt-1">
+                    No lead gen forms available.{' '}
                     <button
                       type="button"
                       onClick={() => router.push('/dashboard/leadgen/forms/create')}
                       className="text-primary hover:underline"
                     >
-                      Create one
+                      Create a form
                     </button>
                   </p>
                 )}

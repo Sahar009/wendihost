@@ -17,14 +17,14 @@ import {
   CourseRegistrationCard,
 } from '@/components/leadgen/TemplateCards';
 
-export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
+export const getServerSideProps = withIronSessionSsr(async ({ req, res }) => {
   const user = await validateUser(req)
   const data = user as any
   if (data?.redirect) return sessionRedirects(data?.redirect)
-  return { 
+  return {
     props: {
       user: JSON.stringify(user),
-    }, 
+    },
   }
 }, sessionCookie())
 
@@ -34,65 +34,75 @@ interface IProps {
 
 const prebuiltTemplates = [
   {
+    id: 'voting-poll',
+    name: 'Voting poll',
+    description: 'Create a voting poll for anything you need suggestions for from your users',
+    category: 'Survey',
+    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
+    primaryColor: '#47a97b',
+    fields: [
+      { label: 'Full name', type: 'text', required: true, placeholder: 'Full name' },
+      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Email/Phone Number' },
+      { label: 'Question 1', type: 'select', required: true, placeholder: 'Choose your answer', options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'] },
+    ],
+    submitButtonText: 'Submit response',
+  },
+  {
     id: 'business-inquiry',
     name: 'Business Inquiry',
     description: 'Perfect for collecting business inquiries and service requests',
     category: 'Business',
     image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
-    primaryColor: '#3B82F6',
+    primaryColor: '#0070f3',
     fields: [
-      { label: 'Full name', type: 'text', required: true, placeholder: 'Enter your full name' },
-      { label: 'Business Name', type: 'text', required: true, placeholder: 'Your business name' },
-      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Contact information' },
-      { label: 'Service interested in', type: 'select', required: true, placeholder: 'Select service', options: ['Consulting', 'Development', 'Marketing', 'Other'] },
-      { label: 'Message', type: 'textarea', required: false, placeholder: 'Tell us more about your needs' },
+      { label: 'Full name', type: 'text', required: true, placeholder: 'Full name' },
+      { label: 'Business Name', type: 'text', required: true, placeholder: 'Business Name' },
+      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Email/Phone Number' },
+      { label: 'Service Interested in', type: 'select', required: true, placeholder: 'Select service', options: ['Consulting', 'Development', 'Marketing', 'Other'] },
+      { label: 'Message', type: 'textarea', required: false, placeholder: 'Message' },
     ],
     submitButtonText: 'Send Enquiry',
   },
   {
     id: 'event-registration',
-    name: 'Register for Event',
-    description: 'Collect registrations for events, webinars, and conferences',
-    category: 'Events',
+    name: 'eBook Download',
+    description: 'Get instant access to the full eBook pdf package',
+    category: 'Education',
     image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
-    primaryColor: '#EF4444',
+    primaryColor: '#f06548',
     fields: [
-      { label: 'Full name', type: 'text', required: true, placeholder: 'Enter your name' },
-      { label: 'Email', type: 'email', required: true, placeholder: 'your@email.com' },
-      { label: 'Phone number', type: 'tel', required: true, placeholder: '+234...' },
-      { label: 'Message', type: 'textarea', required: false, placeholder: 'Any special requirements?' },
+      { label: 'Full name', type: 'text', required: true, placeholder: 'Full name' },
+      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Email/Phone Number' },
     ],
-    submitButtonText: 'Register',
+    submitButtonText: 'Send the ebook to me',
   },
   {
     id: 'restaurant-booking',
-    name: 'Restaurant Booking',
-    description: 'Take table reservations and special requests',
-    category: 'Hospitality',
+    name: 'Content Creation Guide',
+    description: 'Learn how to start a content creation journey from scratch',
+    category: 'Creative',
     image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
-    primaryColor: '#F59E0B',
+    primaryColor: '#f6b042',
     fields: [
-      { label: 'Full name', type: 'text', required: true, placeholder: 'Your name' },
-      { label: 'Email', type: 'email', required: true, placeholder: 'your@email.com' },
-      { label: 'Party size', type: 'number', required: true, placeholder: 'Number of guests' },
-      { label: 'Preferred time', type: 'text', required: true, placeholder: 'e.g., 7:00 PM' },
-      { label: 'Occasion', type: 'select', required: false, placeholder: 'Select occasion', options: ['Birthday', 'Anniversary', 'Business', 'Casual', 'Other'] },
-      { label: 'Special Request', type: 'textarea', required: false, placeholder: 'Any dietary restrictions or special requests?' },
+      { label: 'Full name', type: 'text', required: true, placeholder: 'Full name' },
+      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Email/Phone Number' },
     ],
     submitButtonText: 'Book',
   },
   {
-    id: 'voting-poll',
-    name: 'Voting poll',
-    description: 'Create polls and surveys to gather opinions',
-    category: 'Survey',
+    id: 'course-registration',
+    name: 'Professional Course',
+    description: 'The ultimate course to becoming a professional hairdresser',
+    category: 'Education',
     image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
-    primaryColor: '#10B981',
+    primaryColor: '#b314f8',
     fields: [
-      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Your contact' },
-      { label: 'Question 1', type: 'select', required: true, placeholder: 'Choose your answer', options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'] },
+      { label: 'Full name', type: 'text', required: true, placeholder: 'Full name' },
+      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Email/Phone Number' },
+      { label: 'Service Interested in', type: 'select', required: true, placeholder: 'Select service', options: ['Hair Styling', 'Make Up', 'Fashion Design'] },
+      { label: 'Message', type: 'textarea', required: false, placeholder: 'Message' },
     ],
-    submitButtonText: 'Submit response',
+    submitButtonText: 'Book my place',
   },
   {
     id: 'conference-registration',
@@ -108,21 +118,6 @@ const prebuiltTemplates = [
       { label: 'Role', type: 'text', required: false, placeholder: 'Your job title' },
     ],
     submitButtonText: 'Register',
-  },
-  {
-    id: 'course-registration',
-    name: 'Register for our course',
-    description: 'Enroll students in courses and training programs',
-    category: 'Education',
-    image: 'https://res.cloudinary.com/dvjdvvnn3/image/upload/v1767953900/Frame_120_jwejgz.png',
-    primaryColor: '#EF4444',
-    fields: [
-      { label: 'Full name', type: 'text', required: true, placeholder: 'Your full name' },
-      { label: 'Email/Phone Number', type: 'text', required: true, placeholder: 'Contact details' },
-      { label: 'Course interested in', type: 'select', required: true, placeholder: 'Select course', options: ['Web Development', 'Data Science', 'Digital Marketing', 'Graphic Design'] },
-      { label: 'Message', type: 'textarea', required: false, placeholder: 'Any questions or comments?' },
-    ],
-    submitButtonText: 'Send Enquiry',
   },
 ];
 
@@ -222,14 +217,14 @@ function WebTemplates(props: IProps) {
       {/* Pre-built Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredPrebuiltTemplates.map((template) => {
-          const TemplateComponent = 
+          const TemplateComponent =
             template.id === 'business-inquiry' ? BusinessInquiryCard :
-            template.id === 'event-registration' ? EventRegistrationCard :
-            template.id === 'restaurant-booking' ? RestaurantBookingCard :
-            template.id === 'voting-poll' ? VotingPollCard :
-            template.id === 'conference-registration' ? ConferenceRegistrationCard :
-            template.id === 'course-registration' ? CourseRegistrationCard :
-            null;
+              template.id === 'event-registration' ? EventRegistrationCard :
+                template.id === 'restaurant-booking' ? RestaurantBookingCard :
+                  template.id === 'voting-poll' ? VotingPollCard :
+                    template.id === 'conference-registration' ? ConferenceRegistrationCard :
+                      template.id === 'course-registration' ? CourseRegistrationCard :
+                        null;
 
           if (!TemplateComponent) return null;
 

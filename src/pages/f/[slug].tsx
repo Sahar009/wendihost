@@ -153,18 +153,18 @@ export default function PublicForm() {
   // Determine which preview component to use based on form name or slug
   const getPreviewComponent = () => {
     const formName = form.name?.toLowerCase() || form.slug?.toLowerCase() || '';
-    
+
     if (formName.includes('business') || formName.includes('inquiry')) {
       return BusinessInquiryPreview;
-    } else if (formName.includes('event') || formName.includes('register')) {
+    } else if (formName.includes('event') || formName.includes('register') || formName.includes('ebook') || formName.includes('download')) {
       return EventRegistrationPreview;
-    } else if (formName.includes('restaurant') || formName.includes('booking')) {
+    } else if (formName.includes('restaurant') || formName.includes('booking') || formName.includes('content') || formName.includes('creation') || formName.includes('guide')) {
       return RestaurantBookingPreview;
     } else if (formName.includes('voting') || formName.includes('poll')) {
       return VotingPollPreview;
     } else if (formName.includes('conference')) {
       return ConferenceRegistrationPreview;
-    } else if (formName.includes('course')) {
+    } else if (formName.includes('course') || formName.includes('professional')) {
       return CourseRegistrationPreview;
     } else {
       // Default fallback - use business inquiry

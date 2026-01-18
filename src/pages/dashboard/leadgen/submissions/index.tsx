@@ -146,7 +146,7 @@ function FormSubmissions(props: IProps) {
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/dashboard/leadgen/templates')}
-              className=" text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center gap-2"
+              className=" text-white px-4 py-2 rounded-lg bg-blue-600 font-medium hover:bg-blue-900 transition-colors flex items-center gap-2"
             >
               <Eye className="w-4 h-4" />
               View Templates

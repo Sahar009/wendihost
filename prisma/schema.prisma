@@ -650,6 +650,7 @@ model LandingPage {
   formFields       Json   @db.Json
   submitButtonText String @default("Submit")
   thankYouMessage  String @default("Thank you for your interest!")
+  whatsappTemplate String? // WhatsApp template to send on form submission
 
   // Tracking
   views       Int @default(0)

@@ -403,7 +403,7 @@ function LeadScraper(props: IProps) {
               <li>• Manually reach out to leads using our built-in template messages to get them into your automation pipeline</li>
             </ul>
             <p className="mt-3 text-xs text-blue-700 italic">
-              Note: "All contacts shown are publicly available. Outreach must be manual and compliant with WhatsApp policies."
+              Note: &quot;All contacts shown are publicly available. Outreach must be manual and compliant with WhatsApp policies.&quot;
             </p>
           </div>
         </div>
@@ -415,7 +415,7 @@ function LeadScraper(props: IProps) {
           {!results && !loading && (
             <div className="text-center py-12 text-gray-500">
               <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Fill in the form and Click "Business Leads Near Me" to find leads ready to pay you to help their business grow</p>
+              <p>Fill in the form and Click &quot;Business Leads Near Me&quot; to find leads ready to pay you to help their business grow</p>
             </div>
           )}
 
