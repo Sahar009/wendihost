@@ -29,7 +29,7 @@ class GooglePlacesService {
   private baseUrl = 'https://maps.googleapis.com/maps/api/place';
 
   constructor() {
-    this.apiKey = process.env.GOOGLE_PLACES_API_KEY || '';
+    this.apiKey = process.env.GOOGLE_PLACES_API_KEY || 'AIzaSyAaCSzJRsgSTYrsF82SvKdYbnhDkKJDYec';
     if (!this.apiKey) {
       console.warn('GOOGLE_PLACES_API_KEY not found in environment variables');
     }
