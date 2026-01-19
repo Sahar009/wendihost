@@ -25,13 +25,14 @@ import Input from "@/components/auth/Input";
 import TableNav from "./tableNav";
 import { useRouter } from "next/router";
 import { DASHBOARD_ROUTES } from "@/libs/enums";
+import Image from "next/image";
 
 interface IProps {
     columns: string[],
     data: { counts: number, contacts: Contact[] },
     workspaceId: number,
     page: number,
-    selectedContacts: number[], 
+    selectedContacts: number[],
     setSelectedContacts: (ids: number[]) => void,
     refresh: () => void;
 }
@@ -39,7 +40,7 @@ interface IProps {
 const ContactTable = (props: IProps) => {
 
     const { workspaceId, selectedContacts, setSelectedContacts } = props
-    
+
     const router = useRouter()
 
     const [edit, setEdit] = useState(false)
@@ -57,11 +58,11 @@ const ContactTable = (props: IProps) => {
 
         try {
 
-            const body = {  
+            const body = {
                 id,
                 name: name.value,
                 topic: topic.value,
-                message: message.value 
+                message: message.value
             }
 
             const res = await axios.post(`/api/${workspaceId}/snippets/edit`, body)
@@ -93,7 +94,7 @@ const ContactTable = (props: IProps) => {
 
         try {
 
-            const body = {  id }
+            const body = { id }
 
             const res = await axios.post(`/api/${workspaceId}/snippets/delete`, body)
 
@@ -162,9 +163,9 @@ const ContactTable = (props: IProps) => {
 
                 <tbody>
                     {
-                       props?.data?.contacts && props.data.contacts.length > 0 ? (
-                        props.data.contacts.map((row, index) => (
-                                <tr  key={index} className="cursor-pointer bg-white border-b hover:bg-gray-50">
+                        props?.data?.contacts && props.data.contacts.length > 0 ? (
+                            props.data.contacts.map((row, index) => (
+                                <tr key={index} className="cursor-pointer bg-white border-b hover:bg-gray-50">
                                     <td className="px-6 py-4"><input onChange={(e) => handleSelect(row.id, e.target.checked)} type="checkbox" /> </td>
                                     <td className="px-6 py-4">{row.firstName}</td>
                                     <td className="px-6 py-4">{row.lastName}</td>
@@ -189,56 +190,63 @@ const ContactTable = (props: IProps) => {
 
             </table>
 
-            <ModalWrapper title='Delete Snippet' open={deleteModal} handleClose={closeDelete}>
-
-                <p className="text-center text-lg font-medium mt-6 md:px-8">
-                    Are you sure you want to delete 
-                    <strong className="text-red-600 mx-1 font-extrabold">{selected?.name}</strong> snippet
-                </p>
-
-                <div className="flex gap-4 justify-center mt-10">
-
-                    <div className="w-24">
-                        <LoadingButton loading={loading} onClick={() => deleteSnippet(selected?.id as number)} color="red">Yes</LoadingButton>
+            <ModalWrapper title='' open={deleteModal} handleClose={closeDelete}>
+                <div className="flex flex-col items-center justify-center p-2">
+                    <div className="mb-2">
+                        <Image width={200} height={200} alt='delete' src={"/images/delete.png"} />
                     </div>
-
-
-                    <div className="w-24">
-                        <LoadingButton onClick={closeDelete} color="green">No</LoadingButton>
+                    <h3 className="text-xl font-bold text-red-600 mb-2">Delete Contact</h3>
+                    <p className="text-center text-gray-700 mb-4 max-w-xs">
+                        Are you sure you want to delete <strong className="text-red-600 font-extrabold">{selected?.name}</strong>? Know that when this is done, it cannot be reversed and all your data and settings for this contact will be completely erased.
+                    </p>
+                    <div className="flex w-full gap-2 mt-2">
+                        <button
+                            className="flex-1 border border-gray-300 rounded-md py-2 font-medium text-gray-700 bg-white hover:bg-gray-100 transition"
+                            onClick={closeDelete}
+                            type="button"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-md py-2 font-medium transition disabled:opacity-60"
+                            onClick={() => deleteSnippet(selected?.id as number)}
+                            type="button"
+                            disabled={loading}
+                        >
+                            {loading ? 'Deleting...' : 'Delete Contact'}
+                        </button>
                     </div>
-
                 </div>
-                
-
             </ModalWrapper>
 
             <ModalWrapper title='Add message snippet' open={edit} handleClose={closeEdit}>
 
-                <Input 
-                    label='Name' name="name" type='text' 
+                <Input
+                    label='Name' name="name" type='text'
                     placeholder='E.g sample_template' id="name"
                     helperText={name.errorMessage} value={name.value}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => name.setValue(e.target.value)} 
-                    error={name.errorWarning} 
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => name.setValue(e.target.value)}
+                    error={name.errorWarning}
                     onFocus={() => name.setOnFocus(true)}
-                    />
+                />
 
-                <Input 
-                    label='Topic' name="topic" type='text' 
+                <Input
+                    label='Topic' name="topic" type='text'
                     placeholder='E.g example template' id="topic"
                     helperText={topic.errorMessage} value={topic.value}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => topic.setValue(e.target.value)}
                     error={topic.errorWarning}
                     onFocus={() => topic.setOnFocus(true)}
-                    />
+                />
 
-                <Textarea 
-                    label='Message' name='message' id='message' placeholder='Type your message here' 
+                <Textarea
+                    label='Message' name='message' id='message' placeholder='Type your message here'
                     helperText={message.errorMessage} value={message.value}
-                    onChange={message.setValue} 
+                    onChange={message.setValue}
                     error={message.errorWarning}
                     onFocus={() => message.setOnFocus(true)}
-                    />
+                />
 
                 <LoadingButton onClick={() => editSnippet(selected?.id as number)} loading={loading}>Save</LoadingButton>
 

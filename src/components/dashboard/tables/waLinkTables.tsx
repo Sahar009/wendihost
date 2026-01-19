@@ -11,6 +11,7 @@ import useInput from "@/hooks/useInput";
 import Input from "@/components/auth/Input";
 import { BsThreeDotsVertical } from 'react-icons/bs'
 import QRCodeDisplay from "@/components/utils/QRCodeDisplay";
+import Image from "next/image";
 
 interface IProps {
     columns: string[],
@@ -58,7 +59,7 @@ const WaLinkTable = (props: IProps) => {
 
         try {
 
-            const body = {  id }
+            const body = { id }
 
             const res = await axios.post(`/api/${workspaceId}/wa-link/delete`, body)
 
@@ -95,12 +96,12 @@ const WaLinkTable = (props: IProps) => {
 
     async function copyContent(content: string) {
         try {
-          await navigator.clipboard.writeText(content);
-          toast.success('Copied to clipboard');
+            await navigator.clipboard.writeText(content);
+            toast.success('Copied to clipboard');
         } catch (err) {
-          toast.error('Failed to copy to clipboard');
+            toast.error('Failed to copy to clipboard');
         }
-      }
+    }
 
     return (
 
@@ -126,7 +127,7 @@ const WaLinkTable = (props: IProps) => {
                         <th scope="col" className="px-6 py-4 font-semibold text-gray-900">
                             QR Code
                         </th>
-                       
+
                     </tr>
                 </thead>
 
@@ -152,11 +153,11 @@ const WaLinkTable = (props: IProps) => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{row.message}</td>
-                                    <td onClick={() =>  copyContent(BASE_LINK + row.name)} className="px-6 py-4 text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium hover:bg-blue-50 rounded transition-all duration-200">{BASE_LINK + row.name}</td>
+                                    <td onClick={() => copyContent(BASE_LINK + row.name)} className="px-6 py-4 text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium hover:bg-blue-50 rounded transition-all duration-200">{BASE_LINK + row.name}</td>
                                     <td className="px-6 py-4 text-sm text-gray-500">{dateFormat(row.createdAt)}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center group">
-                                            <QRCodeDisplay 
+                                            <QRCodeDisplay
                                                 url={BASE_LINK + row.name}
                                                 title={row.name}
                                                 size={60}
@@ -202,32 +203,39 @@ const WaLinkTable = (props: IProps) => {
                             )
                         })
                     }
-             
+
                 </tbody>
 
             </table>
 
-            <ModalWrapper title='Delete Snippet' open={deleteModal} handleClose={closeDelete}>
-
-                <p className="text-center text-lg font-medium mt-6 md:px-8">
-                    Are you sure you want to delete 
-                    <strong className="text-primary mx-1 font-extrabold">{selected?.name}</strong> snippet
-                </p>
-
-                <div className="flex gap-4 justify-center mt-10">
-
-                    <div className="w-24">
-                        <LoadingButton loading={loading} onClick={() => deleteLink(selected?.id as number)} color="red">Yes</LoadingButton>
+            <ModalWrapper title='' open={deleteModal} handleClose={closeDelete}>
+                <div className="flex flex-col items-center justify-center p-2">
+                    <div className="mb-2">
+                        <Image width={200} height={200} alt='delete' src={"/images/delete.png"} />
                     </div>
-
-
-                    <div className="w-24">
-                        <LoadingButton onClick={closeDelete} color="primary">No</LoadingButton>
+                    <h3 className="text-xl font-bold text-red-600 mb-2">Delete WhatsApp Link</h3>
+                    <p className="text-center text-gray-700 mb-4 max-w-xs">
+                        Are you sure you want to delete <strong className="text-red-600 font-extrabold">{selected?.name}</strong>? Know that when this is done, it cannot be reversed and all your data and settings for this link will be completely erased.
+                    </p>
+                    <div className="flex w-full gap-2 mt-2">
+                        <button
+                            className="flex-1 border border-gray-300 rounded-md py-2 font-medium text-gray-700 bg-white hover:bg-gray-100 transition"
+                            onClick={closeDelete}
+                            type="button"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-md py-2 font-medium transition disabled:opacity-60"
+                            onClick={() => deleteLink(selected?.id as number)}
+                            type="button"
+                            disabled={loading}
+                        >
+                            {loading ? 'Deleting...' : 'Delete Link'}
+                        </button>
                     </div>
-
                 </div>
-                
-
             </ModalWrapper>
 
 

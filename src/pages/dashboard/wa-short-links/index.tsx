@@ -20,20 +20,20 @@ import Image from 'next/image'
 
 
 
-export const getServerSideProps = withIronSessionSsr(async({req, res}) => {
+export const getServerSideProps = withIronSessionSsr(async ({ req, res }) => {
 
     const user = await validateUser(req)
 
     const data = user as any
 
     if (data?.redirect) return sessionRedirects(data?.redirect)
-    
-    return { 
-      props: {
-        user: JSON.stringify(user),
-      }, 
+
+    return {
+        props: {
+            user: JSON.stringify(user),
+        },
     }
-    
+
 }, sessionCookie())
 
 
@@ -52,7 +52,7 @@ export default function ShortLinks(props: IProps) {
     const [data, setData] = useState([])
 
     const [search, setSearch] = useState('')
-    
+
     // Filter data based on search
     const filteredData = data?.filter((item: any) => {
         const searchLower = search.toLowerCase();
@@ -69,9 +69,9 @@ export default function ShortLinks(props: IProps) {
     const getData = useSWR(`/api/${workspaceId}/wa-link/get?page=${page}`, axios)
 
     useEffect(() => {
-        
+
         const res = getData?.data as AxiosResponse
-        const data : ApiResponse = res?.data
+        const data: ApiResponse = res?.data
 
         if (data?.data) {
             setData(data?.data)
@@ -81,7 +81,7 @@ export default function ShortLinks(props: IProps) {
 
     useEffect(() => {
         const page = router.query.page
-        setPage(page ? Number(page) : 1) 
+        setPage(page ? Number(page) : 1)
     }, [getData, router.query.page, router])
 
     const refresh = () => {
@@ -94,7 +94,7 @@ export default function ShortLinks(props: IProps) {
             <div className='my-6 flex justify-between items-center gap-4'>
                 <div className='flex items-center gap-4 flex-1'>
                     <div className='relative flex-1 max-w-md'>
-                        
+
                         <input
                             type='text'
                             placeholder='Search short links...'
@@ -105,20 +105,20 @@ export default function ShortLinks(props: IProps) {
                     </div>
                 </div>
                 <div className='flex items-center gap-2'>
-                   
+
                     <LoadingButton loading={loading} onClick={() => router.push(DASHBOARD_ROUTES.SHORTS + '/create')} color='blue' className='px-4'>
-                        
-                       + Create Short Link 
+
+                        + Create Short Link
                     </LoadingButton>
                 </div>
             </div>
 
-           
+
             {filteredData.length === 0 ? (
                 <div className='flex flex-col items-center justify-center h-[60vh]'>
                     <div className="relative">
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full blur-xl opacity-20 animate-pulse"></div>
-                        <Image src="/images/link%20icon.png" alt="Short link icon" width={120} height={120} className="relative" />
+                        <Image src="/images/link icon.png" alt="Short link icon" width={120} height={120} className="relative" />
                     </div>
                     <div className='mt-6 text-lg font-medium text-gray-700'>No Short Links Found</div>
                     <p className='mt-2 text-sm text-gray-500 text-center max-w-md'>

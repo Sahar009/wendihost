@@ -9,6 +9,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import LoadingButtonSM from "@/components/utils/LoadingButtonSM";
 import { MoreVertical } from "lucide-react";
+import Image from "next/image";
 
 interface IProps {
     clear(): void
@@ -26,7 +27,7 @@ const ChatbotTable = (props: IProps) => {
 
     const router = useRouter()
 
-    const [loading, setLoading] = useState(false)    
+    const [loading, setLoading] = useState(false)
     const [publishLoading, setPublishLoading] = useState<number | null>(null)
     const [openMenu, setOpenMenu] = useState<number | null>(null)
 
@@ -70,13 +71,13 @@ const ChatbotTable = (props: IProps) => {
 
     const togglePublish = async (id: number) => {
         setPublishLoading(id)
-        
+
         try {
             const res = await axios.put(`/api/${props.workspaceId}/chatbot/${id}/toggle-publish`)
-            
+
             toast.success(res.data.message)
             props.refresh()
-            
+
         } catch (e) {
             if (axios.isAxiosError(e)) {
                 toast.error(e?.response?.data?.message)
@@ -84,7 +85,7 @@ const ChatbotTable = (props: IProps) => {
                 console.error(e);
             }
         }
-        
+
         setPublishLoading(null)
     }
 
@@ -92,11 +93,11 @@ const ChatbotTable = (props: IProps) => {
     return (
         <div className="overflow-x-auto shadow-md sm:rounded-lg">
 
-            
+
             <table className="w-full text-sm text-left text-gray-500 ">
-            
+
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-            
+
                     <tr>
                         {
                             props.columns.map((column: string, index: number) => {
@@ -115,8 +116,8 @@ const ChatbotTable = (props: IProps) => {
                     {
                         props?.data?.map((row, index) => {
                             return (
-                                <tr 
-                                    key={index} 
+                                <tr
+                                    key={index}
                                     className="cursor-pointer bg-white border-b hover:bg-gray-50 overflow-visible"
                                     onClick={() => nextLink(row.id)}
                                 >
@@ -126,20 +127,20 @@ const ChatbotTable = (props: IProps) => {
                                         {
                                             row.default ?
                                                 <Badge type="success" status="Yes" />
-                                                    : 
-                                                <Badge type="info" status="No"/>
+                                                :
+                                                <Badge type="info" status="No" />
                                         }
                                     </td>
                                     <td className="px-6 py-4 overflow-visible">
                                         {
                                             row.publish ?
                                                 <Badge type="success" status="Published" />
-                                                    : 
-                                                <Badge type="info" status="Draft"/>
+                                                :
+                                                <Badge type="info" status="Draft" />
                                         }
                                     </td>
                                     <td className="px-6 py-4 overflow-visible">{dateFormat(row.createdAt)}</td>
-                                
+
                                     <td className="relative px-6 py-4 overflow-visible" onClick={(e) => e.stopPropagation()}>
                                         <button onClick={() => setOpenMenu(openMenu === row.id ? null : row.id)}>
                                             <MoreVertical size={24} />
@@ -158,7 +159,7 @@ const ChatbotTable = (props: IProps) => {
                                                     disabled={publishLoading === row.id}
                                                 >
                                                     {publishLoading === row.id ? (
-                                                        <LoadingButtonSM onClick={() => {}}>
+                                                        <LoadingButtonSM onClick={() => { }}>
                                                             Loading...
                                                         </LoadingButtonSM>
                                                     ) : (
@@ -179,32 +180,39 @@ const ChatbotTable = (props: IProps) => {
                             )
                         })
                     }
-             
+
                 </tbody>
 
             </table>
 
-            <ModalWrapper title='Delete Snippet' open={props.deleteModal} handleClose={closeDelete}>
-
-                <p className="text-center text-lg font-medium mt-6 md:px-8">
-                    Are you sure you want to delete 
-                    <strong className="text-red-600 mx-1 font-extrabold">{props.selected?.name}</strong> snippet
-                </p>
-
-                <div className="flex gap-4 justify-center mt-10">
-
-                    <div className="w-24">
-                        <LoadingButtonSM loading={loading} onClick={() => deleteChatbot(props.selected?.id as number)} color="red">Yes</LoadingButtonSM>
+            <ModalWrapper title='' open={props.deleteModal} handleClose={closeDelete}>
+                <div className="flex flex-col items-center justify-center p-2">
+                    <div className="mb-2">
+                        <Image width={200} height={200} alt='delete' src={"/images/delete.png"} />
                     </div>
-
-
-                    <div className="w-24">
-                        <LoadingButtonSM onClick={closeDelete} color="green">No</LoadingButtonSM>
+                    <h3 className="text-xl font-bold text-red-600 mb-2">Delete Chatbot</h3>
+                    <p className="text-center text-gray-700 mb-4 max-w-xs">
+                        Are you sure you want to delete <strong className="text-red-600 font-extrabold">{props.selected?.name}</strong>? Know that when this is done, it cannot be reversed and all your data and settings for this chatbot will be completely erased.
+                    </p>
+                    <div className="flex w-full gap-2 mt-2">
+                        <button
+                            className="flex-1 border border-gray-300 rounded-md py-2 font-medium text-gray-700 bg-white hover:bg-gray-100 transition"
+                            onClick={closeDelete}
+                            type="button"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-md py-2 font-medium transition disabled:opacity-60"
+                            onClick={() => deleteChatbot(props.selected?.id as number)}
+                            type="button"
+                            disabled={loading}
+                        >
+                            {loading ? 'Deleting...' : 'Delete Chatbot'}
+                        </button>
                     </div>
-
                 </div>
-
-
             </ModalWrapper>
 
         </div>

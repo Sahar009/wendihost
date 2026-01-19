@@ -23,7 +23,7 @@ const PhoneNumber = (props: IProps) => {
 
     useEffect(() => {
         onChange(value)
-    }, [value, onChange])    
+    }, [value, onChange])
 
     const handleFocus = () => {
         setIsFocused(true)
@@ -36,14 +36,14 @@ const PhoneNumber = (props: IProps) => {
     }
 
     return (
-        <div className="mb-4">
+        <div className="mb-6">
             {!hideLabel && (
-                <label className="block mb-2 text-sm font-medium text-gray-700">
+                <label className="block mb-2 text-sm font-semibold text-gray-700">
                     Phone Number
                 </label>
             )}
-            
-            <div className="relative">
+
+            <div className={`relative transition-all duration-200 ease-in-out transform ${isFocused ? 'scale-[1.01]' : ''}`}>
                 <PhoneInput
                     placeholder={placeholder || "Enter phone number"}
                     value={value}
@@ -55,52 +55,66 @@ const PhoneNumber = (props: IProps) => {
                     dropdownStyle={{
                         position: "fixed",
                         zIndex: 99999,
-                        borderRadius: "8px",
-                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                        border: "1px solid #e5e7eb",
+                        borderRadius: "12px",
+                        boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)",
+                        border: "1px solid #f3f4f6",
                         backgroundColor: "white",
                         maxHeight: "300px",
-                        overflowY: "auto"
+                        overflowY: "auto",
+                        marginTop: "8px",
+                        width: "300px",
+                        padding: "4px"
                     }}
                     containerStyle={{
-                        position: "relative",
-                        zIndex: 1
+                        width: '100%',
+                    }}
+                    inputStyle={{
+                        width: '100%',
+                        height: '56px',
+                        fontSize: '16px',
+                        paddingLeft: '58px',
+                        borderRadius: '12px',
+                        backgroundColor: isFocused ? '#fff' : '#f9fafb',
+                        border: error ? '2px solid #fee2e2' : isFocused ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                        transition: 'all 0.2s ease-in-out',
+                        color: '#1f2937',
+                        fontWeight: '500'
+                    }}
+                    buttonStyle={{
+                        border: error ? '2px solid #fee2e2' : isFocused ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                        borderRight: 'none',
+                        backgroundColor: isFocused ? '#fff' : '#f9fafb',
+                        borderRadius: '12px 0 0 12px',
+                        paddingLeft: '6px',
+                        transition: 'all 0.2s ease-in-out',
                     }}
                 />
-                
-                {/* Focus indicator */}
-                <div className={`absolute inset-0 rounded-lg border-2 pointer-events-none transition-all duration-200 ${
-                    isFocused 
-                        ? error 
-                            ? "border-red-500 ring-2 ring-red-200" 
-                            : "border-blue-500 ring-2 ring-blue-200"
-                        : "border-transparent"
-                }`} />
-                
-                {/* Status indicator */}
+
+                {/* Status Icon */}
                 {value && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-opacity duration-200">
                         {error ? (
-                            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
                         ) : (
-                            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                         )}
                     </div>
                 )}
             </div>
-            
+
             {/* Helper text */}
             {helperText && (
-                <p className={`mt-2 text-xs flex items-center gap-1 ${
-                    error ? "text-red-600" : "text-gray-500"
-                }`}>
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+                <p className={`mt-2 text-sm flex items-center gap-1.5 font-medium ${error ? "text-red-600" : "text-gray-500"
+                    }`}>
+                    {error && (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                    )}
                     {helperText}
                 </p>
             )}
