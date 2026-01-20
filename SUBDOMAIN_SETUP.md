@@ -77,3 +77,4 @@ TTL: 3600
 - ⚠️ Requires DNS configuration (not automatic)
 - ⚠️ Requires SSL certificate for HTTPS
 
+

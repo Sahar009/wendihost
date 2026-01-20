@@ -28,6 +28,7 @@ export default function MetaAdsSetup() {
       config_id: FACEBOOK_CONFIG_ID,
       response_type: 'code',
       override_default_response_type: true,
+      auth_type: 'rerequest', // Force permission dialog to show even if user previously connected
       scope: 'ads_management,pages_show_list,pages_read_engagement',
       extras: {
         setup: {},
@@ -51,17 +52,17 @@ export default function MetaAdsSetup() {
           facebookPageId: response.data.data?.facebookPageId,
           hasPermissionIssue: response.data.data?.hasPermissionIssue
         });
-        
+
         // Update workspace in Redux with the new connection data
         if (response.data.data?.workspace) {
           console.log('Updating Redux with workspace:', response.data.data.workspace);
           dispatch(setCurrentWorkspace(response.data.data.workspace));
-          
+
           // Check if we got the required data
           const hasFbUserId = !!response.data.data.workspace.fbUserId;
           const hasFacebookPageId = !!response.data.data.workspace.facebookPageId;
           const hasPermissionIssue = response.data.data?.hasPermissionIssue;
-          
+
           if (hasFbUserId && hasFacebookPageId) {
             toast.success('Facebook account connected successfully for Meta Ads!');
           } else if (hasPermissionIssue) {
@@ -149,7 +150,7 @@ export default function MetaAdsSetup() {
           <div>
             <div className="font-semibold mb-1">Connect your Facebook account for Meta Ads</div>
             <div className="text-gray-500 text-sm mb-2">
-              {isMetaAdsConnected 
+              {isMetaAdsConnected
                 ? (
                   <span className="flex items-center gap-1">
                     Facebook account is connected for Meta Ads
@@ -193,7 +194,7 @@ export default function MetaAdsSetup() {
           {isMetaAdsConnected ? (
             <span className="text-green-600 text-sm font-medium">Connected</span>
           ) : (
-            <LoadingButton 
+            <LoadingButton
               onClick={launchFacebookConnection}
               loading={isConnecting}
               className="bg-primary text-white px-4 py-2 rounded-md font-medium text-sm"
@@ -239,7 +240,7 @@ export default function MetaAdsSetup() {
           <div>
             <div className="font-semibold mb-1">Link WhatsApp Number</div>
             <div className="text-gray-500 text-sm mb-2">
-              {isWhatsAppConnected 
+              {isWhatsAppConnected
                 ? (
                   <span className="flex items-center gap-1">
                     WhatsApp is connected

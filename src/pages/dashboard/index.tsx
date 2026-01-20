@@ -53,7 +53,7 @@ export default function Dashboard(props: IProps) {
     const [dispNumber, setDispNumber] = useState(null)
     const [isMobile, setIsMobile] = useState(false);
     const [metrics, setMetrics] = useState<Metrics>({ contacts: 0, whatsappLinkClicks: 0, chatbots: 0 });
-    
+
     // Debug: Track metrics state changes with more detail
     const setMetricsWithLog = (newMetrics: Metrics) => {
         const timestamp = new Date().toISOString();
@@ -66,7 +66,7 @@ export default function Dashboard(props: IProps) {
     const [isFacebookReady, setIsFacebookReady] = useState(false);
     const router = useRouter()
     const dispatch = useDispatch()
-    
+
     // Track component lifecycle
     useEffect(() => {
         console.log('Dashboard component mounted at:', new Date().toISOString());
@@ -74,7 +74,7 @@ export default function Dashboard(props: IProps) {
             console.log('Dashboard component unmounting at:', new Date().toISOString());
         };
     }, []);
-    
+
     useEffect(() => {
         // Check if window is defined (client-side)
         if (typeof window !== 'undefined') {
@@ -103,7 +103,7 @@ export default function Dashboard(props: IProps) {
 
     const fbLoginCallback = (response: any) => {
         console.log('Facebook login response:', response);
-        
+
         if (response.authResponse) {
             console.log('Facebook auth successful:', response.authResponse);
             setAccessCode(response.authResponse.code)
@@ -138,28 +138,28 @@ export default function Dashboard(props: IProps) {
 
     const launchWhatsAppSignup = () => {
         const facebookAppId = process.env.NEXT_PUBLIC_FB_APP_ID;
-        
+
         console.log('Launching WhatsApp signup with config:', {
             config_id: FACEBOOK_CONFIG_ID,
             app_id: facebookAppId,
             response_type: 'code'
         });
-        
+
         if (!isFacebookReady || !window?.FB || typeof window.FB.login !== 'function') {
             toast.error('Facebook is still initializing. Please try again in a moment.');
             return;
         }
-        
+
         if (!FACEBOOK_CONFIG_ID) {
             toast.error('Facebook configuration is missing. Please check your environment variables.');
             return;
         }
-        
+
         if (!facebookAppId) {
             toast.error('Facebook App ID is missing. Please check your environment variables.');
             return;
         }
-        
+
         const configId = workspace?.facebookConfigId ?? FACEBOOK_CONFIG_ID;
 
         if (!configId) {
@@ -171,6 +171,7 @@ export default function Dashboard(props: IProps) {
             config_id: configId, // configuration ID goes here
             response_type: 'code', // must be set to 'code' for System User access token
             override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default types
+            auth_type: 'rerequest', // Force permission dialog to show even if user previously connected
             scope: 'pages_show_list,ads_management,pages_read_engagement', // Add page and ads permissions
             extras: {
                 setup: {},
@@ -187,7 +188,7 @@ export default function Dashboard(props: IProps) {
         console.log(`[${timestamp}] fetchDashboardData called with workspaceId:`, workspaceId);
         console.log(`[${timestamp}] Current workspace name:`, workspaceName);
         console.log(`[${timestamp}] User workspaces:`, user.workspaces);
-        
+
         if (workspaceId && workspaceId > 0) {
             if (!force && lastFetchedWorkspaceId.current === workspaceId) {
                 console.log(`[${timestamp}] Skipping fetch - already fetched for workspaceId:`, workspaceId);
@@ -222,7 +223,7 @@ export default function Dashboard(props: IProps) {
         } else {
             console.log(`[${timestamp}] Skipping metrics fetch - invalid workspaceId:`, workspaceId);
         }
-    // depend on workspaceId/name so callback updates when workspace changes
+        // depend on workspaceId/name so callback updates when workspace changes
     }, [workspaceId, workspaceName]);
 
 
@@ -280,7 +281,7 @@ export default function Dashboard(props: IProps) {
                 const res: AxiosResponse = await axios.post(`/api/${workspaceId}/waba/access-token`, body)
                 const data: ApiResponse = res?.data
                 toast.success(data.message)
-                
+
                 // Update workspace in Redux with the new connection data
                 if (data?.data?.workspace) {
                     dispatch(setCurrentWorkspace(data.data.workspace))
@@ -295,7 +296,7 @@ export default function Dashboard(props: IProps) {
                         businessId: data?.data?.workspace?.businessId || workspace.businessId,
                     }))
                 }
-                
+
                 setLoggedIn(true)
                 setDispNumber(data?.data?.phone)
                 await fetchDashboardData(true)
@@ -308,7 +309,7 @@ export default function Dashboard(props: IProps) {
                 isAuthenticating.current = false
             }
         }
-        
+
         authenticateBusiness()
     }, [accessCode, phoneNumberId, wabaId, workspaceId])
 
@@ -379,11 +380,11 @@ export default function Dashboard(props: IProps) {
                     </div>
                 </div>
 
-              
+
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
                     <div className='md:col-span-2'>
 
-                     
+
 
                         {
                             (workspace?.phone && workspace?.accessToken) ?
