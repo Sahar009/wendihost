@@ -25,15 +25,16 @@ export default function MetaAdsSetup() {
   const launchFacebookConnection = () => {
     setIsConnecting(true);
 
-    // Use standard OAuth flow (without config_id) to show permission dialog
-    // config_id is only for WhatsApp Business embedded signup and bypasses permission dialogs
-    // Note: We're using popup flow (FB.login), not redirect flow, so we don't need redirect_uri here
-    // The redirect_uri is only needed in the backend token exchange
+    // Using config_id with auth_type='rerequest' to force permission dialog
+    // The key is ensuring permissions are enabled in Facebook Login Configuration
+    // auth_type='rerequest' forces Facebook to show permission dialog even with config_id
     window?.FB.login(fbLoginCallback, {
+      config_id: FACEBOOK_CONFIG_ID,
       response_type: 'code',
-      auth_type: 'rerequest', // Force permission dialog to show even if user previously connected
+      override_default_response_type: true,
+      auth_type: 'rerequest', // This forces the permission dialog to show
       scope: 'ads_management,pages_show_list,pages_read_engagement',
-      return_scopes: true, // Return the actual granted scopes in the response
+      return_scopes: true,
     });
   };
 
