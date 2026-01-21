@@ -52,10 +52,14 @@ export default withIronSessionApiRoute(
       const { workspace } = validatedInfo;
 
       // Exchange code for access token
-      // For popup flow (FB.login with response_type=code), we don't need redirect_uri
-      // The code is obtained via postMessage, not via redirect
+      // When using FB.login with response_type='code', Facebook JS SDK automatically includes
+      // a redirect_uri pointing to Facebook's xd_arbiter for postMessage communication
+      // We need to include the EXACT same redirect_uri in the token exchange
       console.log('🔄 Exchanging code for access token...');
       console.log('Code length:', code?.length);
+
+      // Facebook JS SDK uses this redirect_uri pattern for popup flow
+      const redirectUri = 'https://staticxx.facebook.com/x/connect/xd_arbiter/';
 
       const tokenResponse = await axios.post(
         `${FACEBOOK_BASE_ENDPOINT}oauth/access_token`,
@@ -63,6 +67,7 @@ export default withIronSessionApiRoute(
           client_id: FACEBOOK_APP_ID,
           client_secret: FACEBOOK_CLIENT_SECRET,
           code: code,
+          redirect_uri: redirectUri,
           grant_type: 'authorization_code'
         },
         { headers: { 'Content-Type': 'application/json' } }
