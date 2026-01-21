@@ -52,8 +52,8 @@ export default withIronSessionApiRoute(
       const { workspace } = validatedInfo;
 
       // Exchange code for access token
-      // For standard OAuth, redirect_uri MUST match what was used in FB.login
-      // Even though we're not actually redirecting, Facebook requires it for validation
+      // For popup flow (FB.login with response_type=code), we don't need redirect_uri
+      // The code is obtained via postMessage, not via redirect
       console.log('🔄 Exchanging code for access token...');
       console.log('Code length:', code?.length);
 
@@ -63,7 +63,6 @@ export default withIronSessionApiRoute(
           client_id: FACEBOOK_APP_ID,
           client_secret: FACEBOOK_CLIENT_SECRET,
           code: code,
-          redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || 'https://main.d6jtvdldupsn4.amplifyapp.com'}/dashboard/metaads`,
           grant_type: 'authorization_code'
         },
         { headers: { 'Content-Type': 'application/json' } }

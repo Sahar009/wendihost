@@ -27,15 +27,13 @@ export default function MetaAdsSetup() {
 
     // Use standard OAuth flow (without config_id) to show permission dialog
     // config_id is only for WhatsApp Business embedded signup and bypasses permission dialogs
-    // For standard OAuth, we need to provide redirect_uri that matches the token exchange
-    const redirectUri = `${window.location.origin}/dashboard/metaads`;
-
+    // Note: We're using popup flow (FB.login), not redirect flow, so we don't need redirect_uri here
+    // The redirect_uri is only needed in the backend token exchange
     window?.FB.login(fbLoginCallback, {
       response_type: 'code',
       auth_type: 'rerequest', // Force permission dialog to show even if user previously connected
       scope: 'ads_management,pages_show_list,pages_read_engagement',
       return_scopes: true, // Return the actual granted scopes in the response
-      redirect_uri: redirectUri, // Must match the redirect_uri in token exchange
     });
   };
 
