@@ -52,11 +52,11 @@ export default withIronSessionApiRoute(
       const { workspace } = validatedInfo;
 
       // Exchange code for access token
-      // For client-side OAuth, the redirect_uri should match what was used in FB.login
-      // Since we're using config_id, we don't need redirect_uri
+      // For standard OAuth (without config_id), we don't need redirect_uri
+      // The code is valid for token exchange as-is
       console.log('🔄 Exchanging code for access token...');
       console.log('Code length:', code?.length);
-      
+
       const tokenResponse = await axios.post(
         `${FACEBOOK_BASE_ENDPOINT}oauth/access_token`,
         {
@@ -101,7 +101,7 @@ export default withIronSessionApiRoute(
             fields: 'id'
           }
         });
-        
+
         if (meResponse.data.id) {
           // Convert to BigInt to handle large Facebook User IDs
           fbUserId = BigInt(meResponse.data.id);
@@ -120,7 +120,7 @@ export default withIronSessionApiRoute(
           console.log('🔍 Trying debug_token with app access token...');
           // App access token format: app_id|app_secret
           const appAccessToken = `${FACEBOOK_APP_ID}|${FACEBOOK_CLIENT_SECRET}`;
-          
+
           const debugRes = await axios.get(`${FACEBOOK_BASE_ENDPOINT}debug_token`, {
             params: {
               input_token: accessToken,
@@ -129,7 +129,7 @@ export default withIronSessionApiRoute(
           });
           tokenInfo = debugRes.data.data;
           console.log('Token debug info:', JSON.stringify(tokenInfo, null, 2));
-          
+
           if (tokenInfo.user_id) {
             // Convert to BigInt to handle large Facebook User IDs
             fbUserId = BigInt(tokenInfo.user_id);
@@ -137,10 +137,10 @@ export default withIronSessionApiRoute(
           } else {
             console.warn('⚠️ No user_id in token debug response');
           }
-          
+
           console.log('Token scopes:', tokenInfo.scopes);
           console.log('Token type:', tokenInfo.type);
-          
+
           // Check if token has pages_show_list permission
           const hasPagesPermission = tokenInfo.scopes?.includes('pages_show_list');
           console.log('Has pages_show_list permission:', hasPagesPermission);
@@ -170,7 +170,7 @@ export default withIronSessionApiRoute(
       try {
         console.log('🔍 Fetching pages from /me/accounts endpoint...');
         console.log('Token has pages_show_list:', tokenHasPagesPermission);
-        
+
         const mePagesResponse = await axios.get(`${FACEBOOK_BASE_ENDPOINT}me/accounts`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -193,27 +193,27 @@ export default withIronSessionApiRoute(
         const errorMessage = mePagesError.response?.data?.error?.message || mePagesError.message;
         const errorCode = mePagesError.response?.data?.error?.code;
         const errorType = mePagesError.response?.data?.error?.type;
-        
+
         console.warn('⚠️ Error fetching pages from /me/accounts:', {
           message: errorMessage,
           code: errorCode,
           type: errorType
         });
-        
+
         // Check if it's a permission error
-        const isPermissionError = 
+        const isPermissionError =
           errorMessage?.toLowerCase().includes('permission') ||
           errorMessage?.toLowerCase().includes('pages_show_list') ||
           errorCode === 200 || // Facebook uses 200 for permission errors sometimes
           errorType === 'OAuthException';
-        
+
         if (isPermissionError) {
           console.error('🚨 PERMISSION ERROR DETECTED:', {
             message: errorMessage,
             code: errorCode,
             type: errorType,
             tokenHasPermission: tokenHasPagesPermission,
-            solution: tokenHasPagesPermission 
+            solution: tokenHasPagesPermission
               ? 'Token has permission but API call failed. User may need to reconnect to get a fresh token with the permission.'
               : 'User needs to reconnect Facebook to grant pages_show_list permission. The permission is available in app settings but not granted to this token.'
           });
@@ -224,7 +224,7 @@ export default withIronSessionApiRoute(
             type: errorType
           });
         }
-        
+
         // Fallback: try with userId if we have it
         if (fbUserId && !facebookPageId) {
           try {
@@ -254,10 +254,10 @@ export default withIronSessionApiRoute(
               code: userIdPagesError.response?.data?.error?.code,
               type: userIdPagesError.response?.data?.error?.type
             });
-            
+
             // Check if this is also a permission error
-            if (userIdErrorMsg?.toLowerCase().includes('permission') || 
-                userIdErrorMsg?.toLowerCase().includes('pages_show_list')) {
+            if (userIdErrorMsg?.toLowerCase().includes('permission') ||
+              userIdErrorMsg?.toLowerCase().includes('pages_show_list')) {
               console.error('🚨 PERMISSION ERROR: pages_show_list permission is required');
             }
           }
@@ -274,7 +274,7 @@ export default withIronSessionApiRoute(
       });
 
       const updateData: any = {};
-      
+
       // Only update if we have values (don't set to null/undefined)
       if (fbUserId) {
         updateData.fbUserId = fbUserId;
@@ -282,7 +282,7 @@ export default withIronSessionApiRoute(
       if (facebookPageId) {
         updateData.facebookPageId = facebookPageId;
       }
-      
+
       // Save the access token for Meta Ads (it has the right permissions)
       // This will overwrite the existing accessToken, but that's okay since this one has Meta Ads permissions
       if (accessToken) {
@@ -307,7 +307,7 @@ export default withIronSessionApiRoute(
 
       // Warn if critical data is missing
       const hasPermissionIssue = !facebookPageId && !!fbUserId; // Has user ID but no pages = likely permission issue
-      
+
       if (!fbUserId || !facebookPageId) {
         console.warn('⚠️ Connection completed but missing data:', {
           hasFbUserId: !!fbUserId,
@@ -318,7 +318,7 @@ export default withIronSessionApiRoute(
 
       let message = 'Facebook connected successfully for Meta Ads';
       let warningMessage = null;
-      
+
       if (!fbUserId && !facebookPageId) {
         message = 'Facebook connection attempted, but could not retrieve user or page data. Please try again.';
       } else if (!facebookPageId) {
@@ -335,10 +335,10 @@ export default withIronSessionApiRoute(
       // Manually construct response with explicit BigInt conversion
       // This avoids any potential serialization issues
       const serializedWorkspace = convertBigIntToString(updatedWorkspace);
-      
+
       // Ensure hasPermissionIssue is explicitly a boolean
       const permissionIssueBool = Boolean(hasPermissionIssue);
-      
+
       const responseData = {
         status: 'success' as const,
         statusCode: 200 as const,
@@ -361,7 +361,7 @@ export default withIronSessionApiRoute(
           }
           return value;
         });
-        
+
         res.setHeader('Content-Type', 'application/json');
         return res.status(200).send(jsonString as any);
       } catch (serializationError: any) {
@@ -378,7 +378,7 @@ export default withIronSessionApiRoute(
         error: error.response?.data || error.message,
         status: error.response?.status
       });
-      
+
       console.error('Error connecting Facebook for Meta Ads:', safeError);
 
       const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to connect Facebook';

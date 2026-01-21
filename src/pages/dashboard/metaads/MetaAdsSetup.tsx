@@ -24,17 +24,14 @@ export default function MetaAdsSetup() {
 
   const launchFacebookConnection = () => {
     setIsConnecting(true);
+
+    // Use standard OAuth flow (without config_id) to show permission dialog
+    // config_id is only for WhatsApp Business embedded signup and bypasses permission dialogs
     window?.FB.login(fbLoginCallback, {
-      config_id: FACEBOOK_CONFIG_ID,
       response_type: 'code',
-      override_default_response_type: true,
       auth_type: 'rerequest', // Force permission dialog to show even if user previously connected
       scope: 'ads_management,pages_show_list,pages_read_engagement',
-      extras: {
-        setup: {},
-        featureType: '',
-        sessionInfoVersion: '2',
-      }
+      return_scopes: true, // Return the actual granted scopes in the response
     });
   };
 
@@ -68,16 +65,9 @@ export default function MetaAdsSetup() {
           } else if (hasPermissionIssue) {
             // Show permission error with instructions
             toast.error(
-              'Permission Required: pages_show_list permission is needed.',
+              'Unable to access Facebook Pages. Please reconnect and grant all requested permissions.',
               { autoClose: 10000 }
             );
-            // Also show an info toast with detailed instructions
-            setTimeout(() => {
-              toast.info(
-                'How to fix: Go to developers.facebook.com/apps → Select your app → App Review → Permissions and Features → Find pages_show_list → Request it → Wait for approval, then reconnect',
-                { autoClose: 15000 }
-              );
-            }, 1500);
           } else {
             toast.warning(response.data.message || 'Connected, but some data may be missing.');
             console.warn('Missing data:', {
