@@ -25,14 +25,11 @@ export default function MetaAdsSetup() {
   const launchFacebookConnection = () => {
     setIsConnecting(true);
 
-    // Using config_id with auth_type='rerequest' to force permission dialog
-    // The key is ensuring permissions are enabled in Facebook Login Configuration
-    // auth_type='rerequest' forces Facebook to show permission dialog even with config_id
+    // NOT using config_id - it triggers WhatsApp embedded signup flow
+    // We want the standard permission dialog with checkboxes
     window?.FB.login(fbLoginCallback, {
-      config_id: FACEBOOK_CONFIG_ID,
       response_type: 'code',
-      override_default_response_type: true,
-      auth_type: 'rerequest', // This forces the permission dialog to show
+      auth_type: 'rerequest', // Force permission dialog to show
       scope: 'ads_management,pages_show_list,pages_read_engagement',
       return_scopes: true,
     });
